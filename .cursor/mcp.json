@@ -15,6 +15,17 @@
     },
     "Sentry": {
       "url": "https://mcp.sentry.dev/mcp"
+    },
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref="
+    },
+    "firecrawl": {
+      "type": "http",
+      "url": "https://mcp.firecrawl.dev/v2/mcp-oauth"
+    },
+    "trigger": {
+      "command": "npx",
+      "args": ["trigger.dev@latest", "mcp"]
     }
   }
 }
