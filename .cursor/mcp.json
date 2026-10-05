@@ -17,7 +17,7 @@
       "url": "https://mcp.sentry.dev/mcp"
     },
     "supabase": {
-      "url": "https://mcp.supabase.com/mcp?project_ref="
+      "url": "https://mcp.supabase.com/mcp?project_ref=ciyibyohofcpdsjfwkka"
     },
     "firecrawl": {
       "type": "http",
