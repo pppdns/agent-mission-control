@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "feature": "tsx --env-file=.env.local scripts/feature-runs.mts",
     "trigger:dev": "npx trigger.dev@4.7.2 dev",
     "trigger:deploy": "npx trigger.dev@4.7.2 deploy"
   },
