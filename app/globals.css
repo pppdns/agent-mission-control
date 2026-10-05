@@ -1,26 +1,228 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-void: #06080b;
+  --color-panel: #0b0f14;
+  --color-panel-2: #10161d;
+  --color-panel-3: #161e27;
+  --color-line: #1a232d;
+  --color-line-bright: #2b3a49;
+  --color-ink: #dce4ec;
+  --color-ink-dim: #8896a6;
+  --color-ink-faint: #5a6878;
+  --color-signal: #ffb547;
+  --color-signal-dim: #6b4c1c;
+  --color-cyan: #4fd1e6;
+  --color-coral: #ff6b5a;
+  --color-lime: #9be564;
+  --color-ice: #e8f1ff;
+  --color-openai: #4ee0b5;
+  --color-anthropic: #f0986f;
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-barlow);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--color-void);
+  color: var(--color-ink);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  background-image:
+    radial-gradient(1200px 600px at 78% -10%, rgb(79 209 230 / 0.07), transparent 60%),
+    radial-gradient(900px 500px at -5% 105%, rgb(255 181 71 / 0.05), transparent 60%),
+    linear-gradient(rgb(255 255 255 / 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.018) 1px, transparent 1px);
+  background-size: auto, auto, 32px 32px, 32px 32px;
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgb(255 181 71 / 0.3);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-bright) transparent;
+}
+
+.label {
+  font-family: var(--font-barlow), var(--font-geist-sans), sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  font-size: 0.7rem;
+  color: var(--color-ink-faint);
+}
+
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* HUD panel: hairline frame with corner brackets */
+.hud {
+  position: relative;
+  background: linear-gradient(180deg, rgb(16 22 29 / 0.82), rgb(11 15 20 / 0.92));
+  border: 1px solid var(--color-line);
+  border-radius: 4px;
+}
+.hud::before,
+.hud::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  border-color: var(--color-line-bright);
+  border-style: solid;
+}
+.hud::before {
+  top: -1px;
+  left: -1px;
+  border-width: 1px 0 0 1px;
+}
+.hud::after {
+  bottom: -1px;
+  right: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 34px;
+  padding: 0 0.9rem;
+  border-bottom: 1px solid var(--color-line);
+}
+
+/* React Flow theming */
+.react-flow {
+  --xy-background-color: transparent;
+  --xy-edge-stroke-default: #2b3a49;
+  --xy-attribution-background-color: transparent;
+}
+.react-flow__node {
+  transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+}
+.react-flow__attribution {
+  background: transparent !important;
+  color: var(--color-ink-faint);
+  font-size: 9px;
+}
+.react-flow__attribution a {
+  color: var(--color-ink-faint);
+}
+.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 var(--ring, rgb(255 181 71 / 0.55));
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(255 181 71 / 0);
+  }
+}
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+@keyframes spawn-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes flash-section {
+  0% {
+    background-color: rgb(255 181 71 / 0.16);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.anim-spawn {
+  animation: spawn-in 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.anim-flash {
+  animation: flash-section 1.6s ease-out both;
+}
+.anim-row {
+  animation: row-in 0.25s ease-out both;
+}
+.anim-slide {
+  animation: slide-in 0.22s ease-out both;
+}
+.shimmer-line {
+  background: linear-gradient(90deg, transparent, rgb(255 181 71 / 0.35), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
