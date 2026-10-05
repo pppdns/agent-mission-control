@@ -30,8 +30,8 @@ export default async function Home() {
         <span className="label hidden sm:block">live multi-agent runtime</span>
       </header>
 
-      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-10 px-6 pb-16 pt-6 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-12 lg:pt-14">
-        <section>
+      <main className="mx-auto grid w-full max-w-6xl flex-1 gap-10 px-6 pb-16 pt-6 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:grid-rows-[1fr_auto_auto_1fr] lg:gap-x-12 lg:gap-y-9 lg:pt-14">
+        <section className="lg:col-start-1 lg:row-start-2">
           <p className="label !text-signal">Inspectable by design</p>
           <h1 className="mt-4 font-display text-[clamp(2.8rem,7vw,5.2rem)] font-semibold uppercase leading-[0.92] tracking-[0.01em] text-ice">
             Watch AI agents
@@ -42,19 +42,10 @@ export default async function Home() {
             Give it a hard question. An orchestrator assembles a team of agents that plan, research, argue, and write, while every
             message, tool call, token, and dollar stays visible.
           </p>
-
-          <div className="mt-9 max-w-2xl">
-            {budgetOpen ? (
-              <PromptForm />
-            ) : (
-              <div className="hud px-5 py-4 text-[14px] text-ink-dim">
-                Today&apos;s live-demo budget is used up. Watch a replay below, or come back tomorrow.
-              </div>
-            )}
-          </div>
         </section>
 
-        <aside className="flex min-w-0 flex-col items-center gap-6">
+        {/* On phones the showcase comes before the prompt; on desktop it fills the right column. */}
+        <aside className="flex min-w-0 flex-col items-center gap-6 lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:self-center">
           {featured.length > 0 ? <MissionReel previews={featured} /> : <HeroOrbit />}
           <dl className="hidden w-full max-w-md grid-cols-3 gap-px overflow-hidden rounded-[3px] border border-line bg-line text-center lg:grid">
             {[
@@ -69,6 +60,16 @@ export default async function Home() {
             ))}
           </dl>
         </aside>
+
+        <div className="max-w-2xl lg:col-start-1 lg:row-start-3">
+          {budgetOpen ? (
+            <PromptForm />
+          ) : (
+            <div className="hud px-5 py-4 text-[14px] text-ink-dim">
+              Today&apos;s live-demo budget is used up. Watch a replay below, or come back tomorrow.
+            </div>
+          )}
+        </div>
       </main>
 
       {featured.length > 0 && (
