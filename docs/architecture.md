@@ -239,7 +239,7 @@ All harness tunables are in `src/harness/config.ts`: limits, the budget extensio
 
 | Service | Reference |
 | --- | --- |
-| Vercel | Auto-deploys from git. Pull env vars with `vercel env pull .env.local`. |
+| Vercel | Auto-deploys from git. Public site: https://agentmissioncontrol.dev (apex redirects to www). Pull env vars with `vercel env pull .env.local`. |
 | Supabase | Project `ciyibyohofcpdsjfwkka` (`https://ciyibyohofcpdsjfwkka.supabase.co`), one instance for dev and prod. Apply the schema with `pnpm supabase db push`. |
 | Trigger.dev | Project `proj_wyrlfblciupfknnpcjcf`. Config in `trigger.config.ts`, tasks in `src/trigger/`. Tasks deploy automatically for each commit; `pnpm trigger:deploy` deploys manually. |
 
