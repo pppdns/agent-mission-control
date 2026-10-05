@@ -6,7 +6,7 @@ Prompt in, a small team of agents out, and a live graph/trace/artifact view of t
 
 1. Apply the schema with `pnpm supabase db push`. RLS is enabled with no policies; only the server (secret key) can read or write, and only the server can call `create_run`.
 2. Environment variables (`.env.local`):
-   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`.
+   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`, optional `OPERATOR_TOKEN`.
 3. Run the app and the Trigger.dev worker side by side:
 
 ```bash
@@ -23,6 +23,14 @@ npx trigger.dev@latest dev
 - `src/components/` event-sourced UI (`src/harness/view.ts` reducer).
 
 BotID (`botid` package) protects the run-creation server action; it only verifies on Vercel deployments and is a no-op in local dev.
+
+Run creation is limited per IP (1 active, 3 per hour, 10 per day). To skip those limits for your own testing, set `OPERATOR_TOKEN` in the app's environment (only the Next.js server reads it) and store the same value in an `amc-operator` cookie from the browser console:
+
+```js
+document.cookie = "amc-operator=<OPERATOR_TOKEN>; Path=/; Max-Age=2592000; SameSite=Lax; Secure" // drop "; Secure" on http://localhost
+```
+
+Moderation, BotID and the global daily spend cap still apply. Without `OPERATOR_TOKEN` the cookie does nothing.
 
 ## Local harness run (no database, no Trigger.dev)
 

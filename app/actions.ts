@@ -3,9 +3,9 @@
 import { randomBytes } from "node:crypto";
 import { tasks, wait } from "@trigger.dev/sdk";
 import { checkBotId } from "botid/server";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { createRunRow, hashIp, liveBudgetLeft, LIMITS, moderate } from "@/server/guard";
+import { createRunRow, hashIp, isOperator, liveBudgetLeft, LIMITS, moderate, OPERATOR_COOKIE } from "@/server/guard";
 import { currentEnv, supabase } from "@/server/supabase";
 
 export interface CreateRunState {
@@ -26,6 +26,7 @@ export async function createRun(_prev: CreateRunState, formData: FormData): Prom
   const h = await headers();
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "unknown";
   const ipHash = hashIp(ip);
+  const operator = isOperator((await cookies()).get(OPERATOR_COOKIE)?.value);
 
   const budgetOpen = await liveBudgetLeft().catch(() => null);
   if (budgetOpen === null) return fail("Could not check today's demo budget. Please try again.");
@@ -37,7 +38,7 @@ export async function createRun(_prev: CreateRunState, formData: FormData): Prom
   if (rejection) return fail(rejection);
 
   const id = randomBytes(12).toString("base64url");
-  const created = await createRunRow({ id, prompt, env: currentEnv(), ipHash });
+  const created = await createRunRow({ id, prompt, env: currentEnv(), ipHash, operator });
   if (!created.ok) return fail(created.message);
 
   const db = supabase();

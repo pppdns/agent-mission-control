@@ -1,5 +1,7 @@
-import { createHash } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { supabase } from "./supabase";
+
+export const OPERATOR_COOKIE = "amc-operator";
 
 export const LIMITS = {
   perHour: 3,
@@ -13,6 +15,14 @@ export const LIMITS = {
 export function hashIp(ip: string): string {
   const salt = process.env.IP_HASH_SALT ?? process.env.SUPABASE_SECRET_KEY ?? "amc";
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
+}
+
+/** True when the cookie matches `OPERATOR_TOKEN`. Without the env var nobody is an operator. */
+export function isOperator(cookieValue: string | undefined): boolean {
+  const token = process.env.OPERATOR_TOKEN;
+  if (!token || !cookieValue) return false;
+  const digest = (s: string) => createHash("sha256").update(s).digest();
+  return timingSafeEqual(digest(cookieValue), digest(token));
 }
 
 /**
@@ -49,8 +59,14 @@ const RATE_LIMIT_MESSAGES: Record<string, string> = {
 
 export type CreateRunResult = { ok: true } | { ok: false; message: string };
 
-/** Atomically applies the per-IP rate limits and inserts the queued run (see `public.create_run`). */
-export async function createRunRow(row: { id: string; prompt: string; env: string; ipHash: string }): Promise<CreateRunResult> {
+/** Atomically applies the per-IP rate limits (skipped for operators) and inserts the queued run (see `public.create_run`). */
+export async function createRunRow(row: {
+  id: string;
+  prompt: string;
+  env: string;
+  ipHash: string;
+  operator: boolean;
+}): Promise<CreateRunResult> {
   const { data, error } = await supabase().rpc("create_run", {
     p_id: row.id,
     p_prompt: row.prompt,
@@ -59,6 +75,7 @@ export async function createRunRow(row: { id: string; prompt: string; env: strin
     p_per_hour: LIMITS.perHour,
     p_per_day: LIMITS.perDay,
     p_active_window: `${LIMITS.activeWindowMinutes} minutes`,
+    ...(row.operator ? { p_skip_ip_limits: true } : {}),
   });
   if (error) return { ok: false, message: "Could not create the run. Please try again." };
   if (data === "ok") return { ok: true };
