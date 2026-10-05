@@ -1003,7 +1003,7 @@ This section records product decisions and external setup. Status labels:
 | 11  | Public-demo cost limits         | Decided (tune after real runs)          |
 | 12  | Model routing                   | Decided                                 |
 | 13  | Context budgets                 | Decided                                 |
-| 14  | Public-run persistence          | Decided, with proposed additions        |
+| 14  | Public-run persistence          | Decided                                 |
 | 15  | Abuse / cost protection         | Decided                                 |
 | 16  | Demo example prompts            | Decided                                 |
 | 17  | Landing page and showcase runs  | Decided                                 |
@@ -1021,12 +1021,12 @@ This section records product decisions and external setup. Status labels:
 | Tavily      | `TAVILY_API_KEY` (web search via Tavily MCP)                                                                                                    |
 | Firecrawl   | `FIRECRAWL_API_KEY` (single-page fetch via Firecrawl MCP)                                                                                       |
 
-Env vars currently in Vercel: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `TRIGGER_DEV_API_KEY`.
+Env vars in Vercel (dev and prod):
 
-Still missing (see [Remaining Manual To-Dos](#remaining-manual-to-dos)):
-
-- `SUPABASE_URL` and `SUPABASE_SECRET_KEY`.
-- `TRIGGER_SECRET_KEY`. The Trigger.dev SDK reads this name, not `TRIGGER_DEV_API_KEY`. The dev and prod environments use different keys.
+- LLM providers: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+- Tools: `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`
+- Supabase: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_JWKS_URL`. Only `SUPABASE_URL` and `SUPABASE_SECRET_KEY` are used, server-side; the publishable key is unused because the browser never talks to Supabase.
+- Trigger.dev: `TRIGGER_SECRET_KEY`, with the dev key in Development and the prod key in Production.
 
 ---
 
@@ -1123,7 +1123,7 @@ Don't expose raw chain-of-thought. Each agent step produces explicit structured 
 - Supabase MCP is connected. The `public` schema is currently empty; create the schema through migrations.
 - **Access pattern: server-only.** Server Actions handle mutations, Server Components and route handlers handle reads, and Trigger.dev tasks write runtime state, all using the secret key. The browser never creates a Supabase client, and access control does not rely on RLS policies. Enable RLS on every table with no policies, so the public key can read nothing (defense in depth).
 - Retention: runs never expire (see decision 14).
-- Remaining: add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` to Vercel (dev and prod) and make them available to Trigger.dev tasks.
+- `SUPABASE_URL` and `SUPABASE_SECRET_KEY` are stored in Vercel (dev and prod) and are available to Trigger.dev tasks.
 
 ---
 
@@ -1237,11 +1237,11 @@ Tune based on actual model behavior.
 - **Run URLs are unlisted.** Run pages send `noindex, nofollow` (both as a meta tag and as an `X-Robots-Tag` header) and are left out of the sitemap. Don't also block `/run/` in `robots.txt`: if crawlers can't fetch the page, they never see the `noindex`, and the bare URL can still get indexed from external links.
 - **Prompts aren't publicly discoverable.** There is no public list of all runs; the landing page shows only curated featured runs (see decision 17).
 
-Proposed additions, because runs are public and permanent:
+Safeguards, because runs are public and permanent:
 
-- A notice under the prompt box: "Runs are public and permanent — don't include personal information."
-- An admin-only `hidden` flag on runs for takedowns, set manually in Supabase. Visitors can't delete runs, but we still need a way to remove abusive content.
-- A moderation check on the prompt before the run starts (the OpenAI moderation endpoint is free). It rejects bad prompts before they cost anything or get persisted.
+- **Public-run notice** directly under the prompt box: "Runs are public and permanent — don't include personal information."
+- **Admin-only `hidden` flag for takedowns.** Visitors can't delete runs, but we still need a way to remove abusive content. Keep it minimal: a `hidden boolean not null default false` column on `runs`, flipped manually in the Supabase dashboard or through the Supabase MCP, with no admin UI. When a run is hidden, its page returns 404, its event stream refuses to serve events, and it can't be featured. The data stays in the database.
+- **Prompt moderation.** The prompt goes through the OpenAI moderation endpoint (`omni-moderation-latest`, free) inside the run-creation Server Action, before any run is created or persisted. Flagged prompts get a short rejection message and cost nothing beyond the moderation call.
 
 ---
 
@@ -1340,22 +1340,21 @@ This also directly backs the "checkpoints and resumability" part of the showcase
 - React Flow (`@xyflow/react`) for the agent graph, Motion for animations.
 - Sentry for error monitoring (optional; the Sentry MCP is already configured).
 
+The provider, tool, and Supabase env vars are already available to Trigger.dev tasks.
+
 Remaining setup:
 
-- Make the provider, tool, and Supabase env vars available to Trigger.dev tasks, either through Trigger.dev's Vercel integration or the `syncVercelEnvVars` build extension.
-- Add `TRIGGER_SECRET_KEY` to Vercel, with the dev key for development and the prod key for production.
 - Deploy Trigger.dev tasks alongside the app, through the Vercel integration or a `trigger deploy` CI step.
 
 ---
 
 ## Remaining Manual To-Dos
 
-- [ ] Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` to Vercel (dev and prod).
-- [ ] Add `TRIGGER_SECRET_KEY` to Vercel (dev and prod values), replacing `TRIGGER_DEV_API_KEY`.
-- [ ] Make env vars available to Trigger.dev tasks (decision 18).
+- [x] Add `SUPABASE_URL` and `SUPABASE_SECRET_KEY` to Vercel (dev and prod).
+- [x] Add `TRIGGER_SECRET_KEY` to Vercel (dev and prod values), replacing `TRIGGER_DEV_API_KEY`.
+- [x] Make env vars available to Trigger.dev tasks (decision 18).
 - [ ] Set hard spending limits in the OpenAI and Anthropic dashboards, and check the Tavily and Firecrawl plan limits.
 - [ ] Enable BotID for the Vercel project.
-- [ ] Confirm the proposed persistence additions (14): the public-run notice, the admin `hidden` flag, and prompt moderation.
 - [ ] After the first real runs: tune the limits and context budgets, pick featured runs, and record the showcase run.
 
 ---
