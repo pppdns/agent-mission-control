@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { AgentGraph } from "./agent-graph";
 import { ArtifactPanel } from "./artifact-panel";
 import { BudgetMeter } from "./budget-meter";
+import { BuiltBy } from "./built-by";
 import { HitlPanel } from "./hitl-panel";
 import { Inspector } from "./inspector";
 import { ReplayBar } from "./replay-bar";
@@ -168,6 +169,10 @@ export function RunView({
 
         <Inspector view={view} selection={selection} onSelect={setSelection} onClose={() => setSelection(null)} />
       </main>
+
+      <footer className="flex shrink-0 justify-end border-t border-line bg-panel/80 px-4 py-1.5">
+        <BuiltBy />
+      </footer>
     </div>
   );
 }

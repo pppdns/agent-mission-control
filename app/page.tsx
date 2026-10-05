@@ -1,3 +1,4 @@
+import { BuiltBy } from "@/components/built-by";
 import { HeroOrbit } from "@/components/hero-orbit";
 import { MissionReel } from "@/components/mission-reel";
 import { PromptForm } from "@/components/prompt-form";
@@ -82,8 +83,9 @@ export default async function Home() {
         </section>
       )}
 
-      <footer className="border-t border-line px-6 py-4 text-[11.5px] text-ink-faint sm:px-10">
-        Custom TypeScript agent harness · OpenAI + Anthropic · Tavily and Firecrawl over MCP · Supabase · Trigger.dev
+      <footer className="flex flex-col gap-3 border-t border-line px-6 py-4 text-[11.5px] text-ink-faint sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-10">
+        <span>Custom TypeScript agent harness · OpenAI + Anthropic · Tavily and Firecrawl over MCP · Supabase · Trigger.dev</span>
+        <BuiltBy />
       </footer>
     </div>
   );
