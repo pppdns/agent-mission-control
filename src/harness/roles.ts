@@ -290,12 +290,15 @@ ${inboxText(ctx, agent)}`,
 
 export async function runEditor(ctx: RunContext, agent: AgentInfo, mission: Mission): Promise<void> {
   ctx.bus.emit({ type: "agent.started", data: { goal: agent.goal } }, agent.id);
-  const applied = new Set<number>();
+  // Content last written per section index. A fallback model re-streams from index 0, so a section is
+  // rewritten whenever its content differs from what was applied, not just the first time it appears.
+  const applied = new Map<number, string>();
   let titled = false;
 
   const applySection = (section: EditorOutput["sections"][number], index: number) => {
-    if (applied.has(index)) return;
-    applied.add(index);
+    const fingerprint = JSON.stringify(section);
+    if (applied.get(index) === fingerprint) return;
+    applied.set(index, fingerprint);
     const id = section.id as SectionId;
     if (!SECTION_ORDER.includes(id)) return;
     const blocks: BlockInput[] = (section.blocks ?? [])

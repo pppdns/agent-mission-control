@@ -1,3 +1,4 @@
+import { failRunExternally, STALE_RUN_MS } from "@/server/runs";
 import { supabase } from "@/server/supabase";
 
 export const dynamic = "force-dynamic";
@@ -61,8 +62,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             lastWrite = Date.now();
             if (rows.length === PAGE) continue;
           } else {
-            const { data: current } = await db.from("runs").select("status, hidden").eq("id", id).maybeSingle();
+            const { data: current } = await db.from("runs").select("status, hidden, created_at").eq("id", id).maybeSingle();
             if (!current || current.hidden) break;
+            if ((current.status === "queued" || current.status === "running") && Date.now() - Date.parse(current.created_at) > STALE_RUN_MS) {
+              await failRunExternally(id, "The run timed out before it finished.");
+              continue;
+            }
             if (current.status === "completed" || current.status === "failed") {
               const { count } = await db
                 .from("events")

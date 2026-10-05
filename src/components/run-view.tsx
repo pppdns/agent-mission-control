@@ -22,7 +22,17 @@ function Metric({ label, value, tone }: { label: string; value: string; tone?: s
   );
 }
 
-export function RunView({ runId, initialPrompt, initialStatus }: { runId: string; initialPrompt: string; initialStatus: string }) {
+export function RunView({
+  runId,
+  initialPrompt,
+  initialStatus,
+  initialError,
+}: {
+  runId: string;
+  initialPrompt: string;
+  initialStatus: string;
+  initialError: string | null;
+}) {
   const { view, status, clockSkew } = useRunStream(runId);
   const [selection, setSelection] = useState<Selection>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -110,22 +120,22 @@ export function RunView({ runId, initialPrompt, initialStatus }: { runId: string
 
       <main className="relative min-h-0 flex-1 overflow-y-auto p-2 lg:overflow-hidden">
         <div className="grid h-full grid-cols-1 gap-2 lg:grid-cols-[1.15fr_1fr] lg:grid-rows-[minmax(0,1fr)_14.5rem]">
-          <div className="hud relative h-[30rem] min-h-0 overflow-hidden lg:h-auto">
-            <div className="panel-title absolute inset-x-0 top-0 z-10 border-b-0 bg-gradient-to-b from-panel to-transparent">
-              <span className="label !text-ink-dim">Agent graph</span>
-              <span className="num text-[11px] text-ink-faint">
-                {view.agentOrder.length} agents · {view.messages.length} messages
-              </span>
-              <StreamDot status={status} phase={view.phase} />
+          <div className="hud flex h-[32rem] min-h-0 flex-col overflow-hidden lg:h-auto">
+            <div className="relative min-h-0 flex-1">
+              <div className="panel-title absolute inset-x-0 top-0 z-10 border-b-0 bg-gradient-to-b from-panel to-transparent">
+                <span className="label !text-ink-dim">Agent graph</span>
+                <span className="num text-[11px] text-ink-faint">
+                  {view.agentOrder.length} agents · {view.messages.length} messages
+                </span>
+                <StreamDot status={status} phase={view.phase} />
+              </div>
+              {view.agentOrder.length === 0 ? (
+                <BootScreen phase={view.phase} status={initialStatus} error={view.error ?? initialError} />
+              ) : (
+                <AgentGraph view={view} selection={selection} onSelect={setSelection} />
+              )}
             </div>
-            {view.agentOrder.length === 0 ? (
-              <BootScreen phase={view.phase} status={initialStatus} />
-            ) : (
-              <AgentGraph view={view} selection={selection} onSelect={setSelection} />
-            )}
-            <div className="absolute bottom-2 left-2 z-10 hidden lg:block">
-              <BudgetMeter view={view} />
-            </div>
+            <BudgetMeter view={view} />
           </div>
 
           <div className="h-[36rem] min-h-0 lg:h-auto">
@@ -155,8 +165,8 @@ function StreamDot({ status, phase }: { status: string; phase: string }) {
   );
 }
 
-function BootScreen({ phase, status }: { phase: string; status: string }) {
-  const failed = status === "failed";
+function BootScreen({ phase, status, error }: { phase: string; status: string; error: string | null }) {
+  const failed = status === "failed" || phase === "failed";
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="relative h-20 w-20">
@@ -168,7 +178,7 @@ function BootScreen({ phase, status }: { phase: string; status: string }) {
         <div className="label !text-ink-dim">{failed ? "Run failed to start" : phase === "waiting" ? "Waiting for a worker" : "Orchestrator is planning"}</div>
         <p className="mt-1 max-w-xs text-[12.5px] text-ink-faint">
           {failed
-            ? "This run could not be started."
+            ? (error ?? "This run could not be started.")
             : "Runs wait in a queue when the demo is busy. The graph comes alive as soon as the Orchestrator spawns its team."}
         </p>
       </div>

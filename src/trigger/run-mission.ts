@@ -1,6 +1,7 @@
 import { logger, queue, task } from "@trigger.dev/sdk";
 import { mcpServersFromEnv } from "../harness/env";
 import { AgentRuntime } from "../harness/runtime";
+import { failRunExternally } from "../server/runs";
 import { supabase } from "../server/supabase";
 import { SupabaseRunStore } from "../server/supabase-store";
 
@@ -35,5 +36,10 @@ export const runMission = task({
     const summary = await runtime.run();
     logger.log("mission finished", { runId: run.id, ...summary });
     return summary;
+  },
+  // The runtime records its own failures; this covers crashes and kills that happen outside it.
+  onFailure: async ({ payload, error }) => {
+    const message = error instanceof Error ? error.message : String(error);
+    await failRunExternally(payload.runId, `The run stopped unexpectedly: ${message.slice(0, 300)}`);
   },
 });

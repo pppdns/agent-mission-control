@@ -113,7 +113,20 @@ export class AgentRuntime {
     const ctx = new RunContext(runId, prompt, limits, bus, store, budget, llm, registry, evidence, artifact);
     const adapters: McpToolAdapter[] = [];
 
+    // Persist running totals so the global daily spend cap also counts runs that are still in flight (or die).
+    let totalsTimer: ReturnType<typeof setTimeout> | null = null;
+    let totalsWrite: Promise<unknown> = Promise.resolve();
+    bus.subscribe((e) => {
+      if (totalsTimer || (e.type !== "llm.completed" && e.type !== "tool.completed")) return;
+      totalsTimer = setTimeout(() => {
+        totalsTimer = null;
+        totalsWrite = store.updateRun(runId, { totals: { ...budget.totals } }).catch(() => undefined);
+      }, TOTALS_SYNC_MS);
+    });
+
     const finish = async (summary: RunSummary): Promise<RunSummary> => {
+      if (totalsTimer) clearTimeout(totalsTimer);
+      await totalsWrite;
       await Promise.allSettled(adapters.map((a) => a.close()));
       await ctx.settle();
       await bus.flush().catch(() => undefined);
@@ -130,15 +143,26 @@ export class AgentRuntime {
       bus.emit({ type: "run.created", data: { prompt } });
       await store.updateRun(runId, { status: "running", startedAt: new Date().toISOString() });
 
-      const [tavily, firecrawl] = await Promise.all([
-        McpToolAdapter.connect(this.deps.mcp.tavily),
-        McpToolAdapter.connect(this.deps.mcp.firecrawl),
+      const [tavily, firecrawl] = await Promise.allSettled([
+        connectWithRetry(this.deps.mcp.tavily),
+        connectWithRetry(this.deps.mcp.firecrawl),
       ]);
-      adapters.push(tavily, firecrawl);
-      registry.register(exposeTavilySearch(tavily));
-      registry.register(exposeFirecrawlScrape(firecrawl));
+      if (tavily.status === "rejected") {
+        if (firecrawl.status === "fulfilled") await firecrawl.value.close();
+        throw new Error(`Could not connect to the web search MCP server: ${errorText(tavily.reason)}`);
+      }
+      adapters.push(tavily.value);
+      registry.register(exposeTavilySearch(tavily.value));
+      // Page fetch is optional: without it, agents still research from search results.
+      if (firecrawl.status === "fulfilled") {
+        adapters.push(firecrawl.value);
+        registry.register(exposeFirecrawlScrape(firecrawl.value));
+      }
 
       bus.emit({ type: "run.started", data: { limits, tools: registry.manifest() } });
+      if (firecrawl.status === "rejected") {
+        bus.emit({ type: "agent.note", data: { text: `Page fetch is unavailable for this run (${errorText(firecrawl.reason).slice(0, 160)}). Agents will work from search results only.` } });
+      }
 
       const orchestrator = agentInfo({
         id: "orchestrator",
@@ -314,6 +338,21 @@ export class AgentRuntime {
     const per = Math.min(4, Math.max(1, Math.floor(remaining / Math.max(1, researchers.length))));
     for (const r of researchers) ctx.budget.setSearchAllowance(r.id, per);
   }
+}
+
+const TOTALS_SYNC_MS = 2000;
+
+async function connectWithRetry(config: McpServerConfig): Promise<McpToolAdapter> {
+  try {
+    return await McpToolAdapter.connect(config);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return McpToolAdapter.connect(config);
+  }
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function planReport(plan: PlanOutput, evidence: string[]): StepReport {

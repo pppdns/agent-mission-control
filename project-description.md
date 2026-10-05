@@ -996,7 +996,7 @@ This section records product decisions and external setup. Status labels:
 | 4   | Artifact format                 | Decided                                 |
 | 5   | Exposed agent reasoning         | Decided                                 |
 | 6   | LLM provider keys               | Done                                    |
-| 7   | Supabase                        | Done (schema not created yet)           |
+| 7   | Supabase                        | Done                                    |
 | 8   | Firecrawl                       | Done                                    |
 | 9   | Other external APIs             | Deferred                                |
 | 10  | MCP integrations                | Decided                                 |
@@ -1117,10 +1117,10 @@ Don't expose raw chain-of-thought. Each agent step produces explicit structured 
 
 ---
 
-## 7. Supabase — Done (schema not created yet)
+## 7. Supabase — Done
 
 - Project ID `ciyibyohofcpdsjfwkka`. **The same instance serves dev and prod.** This is a demo app, so there's no environment separation. Store an `env` column on `runs` so local dev runs never show up in featured lists.
-- Supabase MCP is connected. The `public` schema is currently empty; create the schema through migrations.
+- Supabase MCP is connected. The schema lives in `supabase/migrations/` and is applied with `pnpm supabase db push`.
 - **Access pattern: server-only.** Server Actions handle mutations, Server Components and route handlers handle reads, and Trigger.dev tasks write runtime state, all using the secret key. The browser never creates a Supabase client, and access control does not rely on RLS policies. Enable RLS on every table with no policies, so the public key can read nothing (defense in depth).
 - Retention: runs never expire (see decision 14).
 - `SUPABASE_URL` and `SUPABASE_SECRET_KEY` are stored in Vercel (dev and prod) and are available to Trigger.dev tasks.
@@ -1354,7 +1354,7 @@ Remaining setup:
 - [x] Add `TRIGGER_SECRET_KEY` to Vercel (dev and prod values), replacing `TRIGGER_DEV_API_KEY`.
 - [x] Make env vars available to Trigger.dev tasks (decision 18).
 - [ ] Set hard spending limits in the OpenAI and Anthropic dashboards, and check the Tavily and Firecrawl plan limits.
-- [ ] Enable BotID for the Vercel project.
+- [x] Enable BotID for the Vercel project (the `botid` package; no dashboard step needed).
 - [ ] After the first real runs: tune the limits and context budgets, pick featured runs, and record the showcase run.
 
 ---

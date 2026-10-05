@@ -5,7 +5,7 @@ import { tasks } from "@trigger.dev/sdk";
 import { checkBotId } from "botid/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { checkRateLimits, hashIp, liveBudgetLeft, LIMITS, moderate } from "@/server/guard";
+import { createRunRow, hashIp, liveBudgetLeft, LIMITS, moderate } from "@/server/guard";
 import { currentEnv, supabase } from "@/server/supabase";
 
 export interface CreateRunState {
@@ -27,22 +27,20 @@ export async function createRun(_prev: CreateRunState, formData: FormData): Prom
   const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip") ?? "unknown";
   const ipHash = hashIp(ip);
 
-  if (!(await liveBudgetLeft())) {
+  const budgetOpen = await liveBudgetLeft().catch(() => null);
+  if (budgetOpen === null) return fail("Could not check today's demo budget. Please try again.");
+  if (!budgetOpen) {
     return fail("Today's live-demo budget is used up. Come back tomorrow, or watch a replay.");
   }
-  const limited = await checkRateLimits(ipHash);
-  if (!limited.ok) return fail(limited.message);
 
   const rejection = await moderate(prompt);
   if (rejection) return fail(rejection);
 
   const id = randomBytes(12).toString("base64url");
-  const db = supabase();
-  const { error: insertError } = await db
-    .from("runs")
-    .insert({ id, prompt, env: currentEnv(), ip_hash: ipHash, status: "queued" });
-  if (insertError) return fail("Could not create the run. Please try again.");
+  const created = await createRunRow({ id, prompt, env: currentEnv(), ipHash });
+  if (!created.ok) return fail(created.message);
 
+  const db = supabase();
   try {
     const handle = await tasks.trigger("run-mission", { runId: id }, { idempotencyKey: `run-${id}` });
     await db.from("runs").update({ trigger_run_id: handle.id }).eq("id", id);

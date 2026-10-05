@@ -362,7 +362,13 @@ export function applyEvent(prev: RunView, e: RunEvent, now: number = Date.now())
           error: null,
         },
       };
-      return patchAgent(s, e.agentId, (a) => ({ ...a, llmInFlight: a.llmInFlight + 1, activity: d.purpose }));
+      return patchAgent(s, e.agentId, (a) => ({
+        ...a,
+        // A provider fallback changes the model actually serving this agent; the badge follows it.
+        info: a.info.model === d.model ? a.info : { ...a.info, provider: d.provider, model: d.model },
+        llmInFlight: a.llmInFlight + 1,
+        activity: d.purpose,
+      }));
     }
 
     case "llm.streaming": {
@@ -406,6 +412,12 @@ export function applyEvent(prev: RunView, e: RunEvent, now: number = Date.now())
       s = patchAgent(s, e.agentId, (a) => ({
         ...a,
         llmInFlight: Math.max(0, a.llmInFlight - 1),
+        activity:
+          a.llmInFlight <= 1 && a.toolsInFlight === 0
+            ? a.info.role === "orchestrator" && a.status === "running"
+              ? "coordinating the team"
+              : null
+            : a.activity,
         llmCalls: a.llmCalls + 1,
         inputTokens: a.inputTokens + d.inputTokens,
         outputTokens: a.outputTokens + d.outputTokens,

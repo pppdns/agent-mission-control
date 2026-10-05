@@ -1,11 +1,13 @@
 import { createHash } from "node:crypto";
-import { supabase, currentEnv } from "./supabase";
+import { supabase } from "./supabase";
 
 export const LIMITS = {
   perHour: 3,
   perDay: 10,
   maxInputChars: 2000,
   dailySpendCapUsd: 25,
+  /** A queued or running run older than this no longer blocks its visitor (covers the task's max duration plus queueing). */
+  activeWindowMinutes: 20,
 };
 
 export function hashIp(ip: string): string {
@@ -13,10 +15,14 @@ export function hashIp(ip: string): string {
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
 }
 
-/** Returns a rejection message when the prompt is flagged, or null when it passes. */
+/**
+ * Returns a rejection message when the prompt is flagged or cannot be checked, or null when it passes.
+ * Fails closed: runs are public and permanent, so an unmoderated prompt is never persisted.
+ */
 export async function moderate(prompt: string): Promise<string | null> {
+  const unavailable = "Content moderation is unavailable right now, so no run was started. Please try again shortly.";
   const key = process.env.OPENAI_API_KEY;
-  if (!key) return null;
+  if (!key) return unavailable;
   try {
     const res = await fetch("https://api.openai.com/v1/moderations", {
       method: "POST",
@@ -24,52 +30,50 @@ export async function moderate(prompt: string): Promise<string | null> {
       body: JSON.stringify({ model: "omni-moderation-latest", input: prompt }),
       signal: AbortSignal.timeout(8000),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return unavailable;
     const json = (await res.json()) as { results?: { flagged: boolean }[] };
-    return json.results?.some((r) => r.flagged)
+    if (!json.results?.length) return unavailable;
+    return json.results.some((r) => r.flagged)
       ? "That prompt was flagged by content moderation, so no run was started. Try rephrasing it."
       : null;
   } catch {
-    return null;
+    return unavailable;
   }
 }
 
-export type GuardResult = { ok: true } | { ok: false; message: string };
+const RATE_LIMIT_MESSAGES: Record<string, string> = {
+  active: "You already have a run in progress. Wait for it to finish first.",
+  hourly: `Limit reached: ${LIMITS.perHour} live runs per hour. You can still watch the featured runs.`,
+  daily: `Limit reached: ${LIMITS.perDay} live runs per day. You can still watch the featured runs.`,
+};
 
-export async function checkRateLimits(ipHash: string): Promise<GuardResult> {
-  const db = supabase();
-  const now = Date.now();
-  const hourAgo = new Date(now - 60 * 60 * 1000).toISOString();
-  const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+export type CreateRunResult = { ok: true } | { ok: false; message: string };
 
-  const { data, error } = await db
-    .from("runs")
-    .select("created_at, status")
-    .eq("ip_hash", ipHash)
-    .gte("created_at", dayAgo);
-  if (error) return { ok: false, message: "Could not verify rate limits. Please try again." };
-
-  const rows = data ?? [];
-  const active = rows.filter((r) => (r.status === "queued" || r.status === "running") && r.created_at > new Date(now - 15 * 60 * 1000).toISOString());
-  if (active.length >= 1) return { ok: false, message: "You already have a run in progress. Wait for it to finish first." };
-  if (rows.filter((r) => r.created_at >= hourAgo).length >= LIMITS.perHour) {
-    return { ok: false, message: `Limit reached: ${LIMITS.perHour} live runs per hour. You can still watch the featured runs.` };
-  }
-  if (rows.length >= LIMITS.perDay) {
-    return { ok: false, message: `Limit reached: ${LIMITS.perDay} live runs per day. You can still watch the featured runs.` };
-  }
-  return { ok: true };
+/** Atomically applies the per-IP rate limits and inserts the queued run (see `public.create_run`). */
+export async function createRunRow(row: { id: string; prompt: string; env: string; ipHash: string }): Promise<CreateRunResult> {
+  const { data, error } = await supabase().rpc("create_run", {
+    p_id: row.id,
+    p_prompt: row.prompt,
+    p_env: row.env,
+    p_ip_hash: row.ipHash,
+    p_per_hour: LIMITS.perHour,
+    p_per_day: LIMITS.perDay,
+    p_active_window: `${LIMITS.activeWindowMinutes} minutes`,
+  });
+  if (error) return { ok: false, message: "Could not create the run. Please try again." };
+  if (data === "ok") return { ok: true };
+  return { ok: false, message: RATE_LIMIT_MESSAGES[data as string] ?? "Could not create the run. Please try again." };
 }
 
-/** Global daily spend circuit breaker, summed from per-run cost telemetry. */
+/**
+ * Global daily spend circuit breaker, summed from per-run cost telemetry across every environment
+ * (dev and prod share the provider keys). Running runs report their cost as they go.
+ */
 export async function liveBudgetLeft(): Promise<boolean> {
   const since = new Date();
   since.setUTCHours(0, 0, 0, 0);
-  const { data } = await supabase()
-    .from("runs")
-    .select("totals")
-    .eq("env", currentEnv())
-    .gte("created_at", since.toISOString());
+  const { data, error } = await supabase().from("runs").select("totals").gte("created_at", since.toISOString());
+  if (error) throw new Error(error.message);
   const spent = (data ?? []).reduce((sum, r) => sum + Number((r.totals as { costUsd?: number } | null)?.costUsd ?? 0), 0);
   return spent < LIMITS.dailySpendCapUsd;
 }

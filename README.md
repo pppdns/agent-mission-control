@@ -4,7 +4,7 @@ Prompt in, a small team of agents out, and a live graph/trace/artifact view of t
 
 ## Setup
 
-1. Apply `supabase/migrations/20261005000000_init.sql` to the Supabase project (SQL editor or `supabase db push`). RLS is enabled with no policies; only the server (secret key) can read or write.
+1. Apply the schema with `pnpm supabase db push`. RLS is enabled with no policies; only the server (secret key) can read or write, and only the server can call `create_run`.
 2. Environment variables (`.env.local`):
    `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`.
 3. Run the app and the Trigger.dev worker side by side:
