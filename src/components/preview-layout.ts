@@ -129,7 +129,7 @@ export function buildSchedule(preview: RunPreview): Schedule {
   const hitl = moments.find((s) => s.moment.kind === "hitl");
   if (hitl) appear.set(VISITOR_NODE, hitl.start);
 
-  const captions: Schedule["captions"] = [{ start: 0, end: REEL.assembleMs, label: `Orchestrator assembles a team of ${preview.agents.length - 1} for this question`, kind: "assemble" }];
+  const captions: Schedule["captions"] = [{ start: 0, end: REEL.assembleMs, label: `Orchestrator assembles a team of ${initial.filter((a) => a.role !== "orchestrator").length} for this question`, kind: "assemble" }];
   const windowMs = REEL.actMs / CAPTION_WINDOWS;
   for (let w = 0; w < CAPTION_WINDOWS; w++) {
     const start = REEL.assembleMs + windowMs * w;
