@@ -1,6 +1,6 @@
 # agent-mission-control
 
-Prompt in, a small team of agents out, and a live graph/trace/artifact view of the whole run. See `project-description.md` for the design decisions.
+Prompt in, a small team of agents out, and a live graph/trace/artifact view of the whole run. See [docs/architecture.md](docs/architecture.md) for how it works and why.
 
 ## Setup
 
@@ -61,7 +61,7 @@ pnpm feature <id> <id> ...      # feature exactly these runs, in this order
 pnpm feature --unfeature <id>   # remove a run from the landing page
 ```
 
-## Phase 2 at a glance
+## Harness at a glance
 
 - **Phase state machine** (`src/harness/runtime.ts`): plan, research, critique, evaluate, HITL, synthesize. A checkpoint is written after every transition; a Trigger.dev retry resumes from the latest one (`run.resumed`).
 - **Gap Detector and loops** (`src/harness/evaluator.ts`): scores the draft, names gaps, and the pure `decideNext` rule picks synthesize, another round (re-tasked researchers, an optional verifier or extra researcher), or a human decision.

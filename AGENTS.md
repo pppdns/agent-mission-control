@@ -1,4 +1,4 @@
-See project description in [project-description.md](project-description.md)
+See the technical overview in [docs/architecture.md](docs/architecture.md)
 
 ## Agent instructions
 
