@@ -50,6 +50,7 @@ export function PreviewGraph({
   className = "",
   labelChars = 16,
   showLabels = true,
+  labelSize = 10,
 }: {
   preview: RunPreview;
   layout: Layout;
@@ -58,6 +59,7 @@ export function PreviewGraph({
   className?: string;
   labelChars?: number;
   showLabels?: boolean;
+  labelSize?: number;
 }) {
   const live = time !== null && schedule !== null;
   const t = time ?? Number.POSITIVE_INFINITY;
@@ -136,7 +138,7 @@ export function PreviewGraph({
               {meta.glyph}
             </text>
             {lines.map((line, i) => (
-              <text key={i} y={R + 13 + i * 11} textAnchor="middle" fontSize="10" fill={active ? "#dce4ec" : "#8896a6"}>
+              <text key={i} y={R + 3 + labelSize + i * (labelSize + 1)} textAnchor="middle" fontSize={labelSize} fill={active ? "#dce4ec" : "#8896a6"}>
                 {line}
               </text>
             ))}

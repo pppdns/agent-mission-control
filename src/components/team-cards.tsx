@@ -38,7 +38,7 @@ export function TeamCards({ previews }: { previews: RunPreview[] }) {
                 </span>
               </div>
               <span className="line-clamp-2 min-h-[2.6em] text-[14.5px] leading-snug text-ink group-hover:text-ice">{p.question || p.title}</span>
-              <PreviewGraph preview={p} layout={layouts[i]} schedule={null} time={null} showLabels={false} className="mx-auto block h-36 w-full" />
+              <PreviewGraph preview={p} layout={layouts[i]} schedule={null} time={null} showLabels={false} className="mx-auto block h-40 w-full" />
               <ul className="flex flex-wrap gap-1.5" aria-label="Team">
                 {p.agents
                   .filter((a) => a.role !== "orchestrator")

@@ -157,7 +157,8 @@ export function MissionReel({ previews }: { previews: RunPreview[] }) {
               layout={layouts[index]}
               schedule={schedule}
               time={reduced ? null : elapsed}
-              labelChars={compact ? 13 : 16}
+              labelChars={compact ? 14 : 18}
+              labelSize={compact ? 11.5 : 10}
               className="mx-auto block h-auto w-full max-w-[460px]"
             />
           </Link>
@@ -168,8 +169,9 @@ export function MissionReel({ previews }: { previews: RunPreview[] }) {
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-4 py-2.5">
             <span className="num flex flex-wrap gap-x-2 text-[11px] text-ink-faint">
-              {previewStats(preview).map((s) => (
+              {previewStats(preview).map((s, i) => (
                 <span key={s} className="whitespace-nowrap">
+                  {i > 0 && <span aria-hidden>· </span>}
                   {s}
                 </span>
               ))}
