@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template>
+      <div data-hf-id="hf-5eq1" id="root" data-composition-id="s09-result" data-width="1080" data-height="1350" data-duration="6.5">
+        <style>
+          @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+          @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+          @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+          @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+          #root { position: absolute; inset: 0; }
+          #s09-stats { position: absolute; left: 20px; right: 20px; bottom: 20px; height: 132px; display: grid; grid-template-columns: repeat(5, 1fr); background: rgb(6 8 11 / 0.92); border: 2px solid #2b3a49; border-radius: 4px; }
+          .s09-stat { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; border-left: 2px solid #1a232d; }
+          .s09-stat:first-child { border-left: 0; }
+          .s09-n { font-family: "Geist Mono", monospace; font-size: 46px; font-weight: 500; color: #dce4ec; font-variant-numeric: tabular-nums; }
+          .s09-l { font-family: "Barlow Condensed", sans-serif; font-size: 24px; font-weight: 600; letter-spacing: 0.14em; color: #8896a6; text-transform: uppercase; }
+        </style>
+
+        <div data-hf-id="hf-g5rp" class="band" id="s09-band">
+          <div data-hf-id="hf-j6hi" class="chap"><span data-hf-id="hf-tebb" class="chap-n">09 / 12</span><span data-hf-id="hf-hs16" class="chap-rule"></span><span data-hf-id="hf-avcc" class="chap-t">The result</span></div>
+          <h1 data-hf-id="hf-sqeq" class="hl">
+            <span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-ys6r" class="w">The</span> <span data-hf-id="hf-hu4h" class="w">result:</span> <span data-hf-id="hf-b7a3" class="w">a</span> <span data-hf-id="hf-hrax" class="w" style="color:#ffb547">cited</span></span>
+            <span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-3igt" class="w">research</span> <span data-hf-id="hf-pluo" class="w">brief</span></span>
+          </h1>
+          <p data-hf-id="hf-tww4" class="sub">Written live. Every claim links to a <b data-hf-id="hf-u7vs">retrieved source</b>.</p>
+        </div>
+
+        <div data-hf-id="hf-v0ka" class="win">
+          <div data-hf-id="hf-7c9h" class="cam" id="s09-cam"><video data-hf-id="hf-gjzr" id="s09-v" class="clip" src="clips/main-editor.mp4" data-start="0" data-duration="6.5" data-media-start="2.6" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-wnp3" id="s09-stats">
+            <div data-hf-id="hf-lb0h" class="s09-stat"><span data-hf-id="hf-6r5r" class="s09-n" data-to="8">0</span><span data-hf-id="hf-ueg4" class="s09-l">Agents</span></div>
+            <div data-hf-id="hf-8ys5" class="s09-stat"><span data-hf-id="hf-29wa" class="s09-n" data-to="3">0</span><span data-hf-id="hf-ualn" class="s09-l">Rounds</span></div>
+            <div data-hf-id="hf-a5p8" class="s09-stat"><span data-hf-id="hf-wg04" class="s09-n" data-to="54">0</span><span data-hf-id="hf-nd9o" class="s09-l">Sources</span></div>
+            <div data-hf-id="hf-9re7" class="s09-stat"><span data-hf-id="hf-frk8" class="s09-n" data-to="25">0</span><span data-hf-id="hf-62lp" class="s09-l">Tool calls</span></div>
+            <div data-hf-id="hf-ayba" class="s09-stat"><span data-hf-id="hf-52lk" class="s09-n" data-to="0.38" data-prefix="$" data-dec="2">$0.00</span><span data-hf-id="hf-sf5d" class="s09-l">Total cost</span></div>
+          </div>
+        </div>
+
+        <script>
+          (function () {
+            const K = 1080 / 1040;
+            const cam = (fx, fy, s) => {
+              const hw = 516 / (K * s), hh = 496 / (K * s);
+              if (hw < 520) fx = Math.min(Math.max(fx, hw), 1040 - hw);
+              if (hh < 650) fy = Math.min(Math.max(fy, hh), 1300 - hh);
+              return { x: 516 - fx * K * s, y: 496 - fy * K * s, scale: s };
+            };
+            const tl = gsap.timeline({ paused: true });
+
+            tl.fromTo("#s09-band .chap", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, 0);
+            tl.fromTo("#s09-band .w", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "power4.out", stagger: 0.04 }, 0.05);
+            tl.fromTo("#s09-band .sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.4);
+
+            tl.fromTo("#s09-cam", cam(779, 420, 1.85), { ...cam(779, 640, 1.85), duration: 6.5, ease: "sine.inOut" }, 0);
+
+            const START = 4.0;
+            tl.fromTo("#s09-stats", { yPercent: 130 }, { yPercent: 0, duration: 0.5, ease: "power4.out" }, START);
+            document.querySelectorAll("#s09-stats .s09-n").forEach((el, i) => {
+              const to = parseFloat(el.dataset.to), dec = parseInt(el.dataset.dec || "0", 10), pre = el.dataset.prefix || "";
+              const p = { v: 0 };
+              tl.fromTo(p, { v: 0 }, {
+                v: to, duration: 0.9, ease: "power2.out", immediateRender: false,
+                onUpdate: () => { el.textContent = pre + p.v.toFixed(dec); },
+              }, START + 0.2 + i * 0.08);
+            });
+
+            tl.to("#s09-band .w", { yPercent: -110, duration: 0.26, ease: "power3.in", stagger: 0.015 }, 6.2);
+            tl.to("#s09-band .sub", { opacity: 0, duration: 0.2, ease: "power1.in" }, 6.25);
+
+            window.__timelines["s09-result"] = tl;
+          })();
+        </script>
+      </div>
+    </template>
+  </body>
+</html>

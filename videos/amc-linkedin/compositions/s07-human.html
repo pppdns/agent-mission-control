@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template>
+      <div data-hf-id="hf-wahm" id="root" data-composition-id="s07-human" data-width="1080" data-height="1350" data-duration="6">
+        <style>
+          @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+          @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+          @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+          @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+          #root { position: absolute; inset: 0; }
+          #s07-glow { position: absolute; left: 516px; top: 496px; width: 1100px; height: 760px; margin: -380px 0 0 -550px; border-radius: 50%; background: radial-gradient(closest-side, rgb(255 181 71 / 0.34), transparent); mix-blend-mode: screen; pointer-events: none; }
+          #s07-k { position: absolute; left: 28px; top: 28px; }
+        </style>
+
+        <div data-hf-id="hf-tr63" class="band" id="s07-band">
+          <div data-hf-id="hf-j6hi" class="chap"><span data-hf-id="hf-d5s9" class="chap-n">07 / 12</span><span data-hf-id="hf-hs16" class="chap-rule"></span><span data-hf-id="hf-mk2r" class="chap-t">Human in the loop</span></div>
+          <h1 data-hf-id="hf-sqeq" class="hl">
+            <span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-ehbp" class="w">It</span> <span data-hf-id="hf-dpd4" class="w">knows</span> <span data-hf-id="hf-rqwg" class="w">when</span> <span data-hf-id="hf-z575" class="w">to</span></span>
+            <span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-xcix" class="w">ask</span> <span data-hf-id="hf-b7a3" class="w">a</span> <span data-hf-id="hf-sgtx" class="w" style="color:#ffb547">human</span></span>
+          </h1>
+          <p data-hf-id="hf-0n2w" class="sub">Out of budget with gaps left? <b data-hf-id="hf-ada1">The run pauses and asks.</b></p>
+        </div>
+
+        <div data-hf-id="hf-v0ka" class="win">
+          <div data-hf-id="hf-99rn" class="cam" id="s07-cam"><video data-hf-id="hf-52pv" id="s07-v" class="clip" src="clips/main-hitl.mp4" data-start="0" data-duration="6" data-media-start="0.5" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-nhtb" id="s07-glow"></div>
+          <div data-hf-id="hf-xi0v" id="s07-k"><span data-hf-id="hf-s3t8" class="chip" style="color:#ffb547"><i data-hf-id="hf-wt6k"></i>hitl.requested · budget clock paused</span></div>
+        </div>
+
+        <script>
+          (function () {
+            const K = 1080 / 1040;
+            const cam = (fx, fy, s) => {
+              const hw = 516 / (K * s), hh = 496 / (K * s);
+              if (hw < 520) fx = Math.min(Math.max(fx, hw), 1040 - hw);
+              if (hh < 650) fy = Math.min(Math.max(fy, hh), 1300 - hh);
+              return { x: 516 - fx * K * s, y: 496 - fy * K * s, scale: s };
+            };
+            const tl = gsap.timeline({ paused: true });
+
+            tl.fromTo("#s07-band .chap", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, 0);
+            tl.fromTo("#s07-band .w", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "power4.out", stagger: 0.04 }, 0.05);
+            tl.fromTo("#s07-band .sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.4);
+
+            tl.fromTo("#s07-cam", cam(279, 760, 1.55), { ...cam(279, 790, 1.98), duration: 6, ease: "power2.out" }, 0);
+            tl.fromTo("#s07-glow", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 1.4, ease: "power2.out" }, 0.4);
+            tl.to("#s07-glow", { opacity: 0.6, scale: 1.06, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: 2 }, 1.8);
+            tl.fromTo("#s07-k", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" }, 1.6);
+
+            tl.to("#s07-band .w", { yPercent: -110, duration: 0.26, ease: "power3.in", stagger: 0.015 }, 5.7);
+            tl.to("#s07-band .sub", { opacity: 0, duration: 0.2, ease: "power1.in" }, 5.75);
+
+            window.__timelines["s07-human"] = tl;
+          })();
+        </script>
+      </div>
+    </template>
+  </body>
+</html>

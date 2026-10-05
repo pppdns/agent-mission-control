@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Mission Control · LinkedIn video · storyboard v2</title>
+    <style>
+      @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+      @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+      @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { background: #06080b; color: #dce4ec; font-family: "Geist", sans-serif; padding: 48px; }
+      header { display: flex; align-items: baseline; gap: 24px; margin-bottom: 8px; }
+      h1 { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 44px; text-transform: uppercase; letter-spacing: 0.01em; }
+      .meta { font-family: "Geist Mono", monospace; font-size: 14px; color: #8896a6; }
+      .lede { color: #8896a6; max-width: 900px; margin: 8px 0 32px; line-height: 1.5; }
+      .lede b { color: #dce4ec; font-weight: 500; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px; }
+      .cell { background: #0b0f14; border: 1px solid #1a232d; border-radius: 6px; overflow: hidden; }
+      .cell img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-bottom: 1px solid #1a232d; }
+      .info { padding: 14px 16px 18px; }
+      .row { display: flex; justify-content: space-between; font-family: "Geist Mono", monospace; font-size: 13px; color: #ffb547; }
+      .row span:last-child { color: #5a6878; }
+      h2 { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 22px; letter-spacing: 0.12em; text-transform: uppercase; margin: 8px 0 6px; }
+      p { font-size: 14px; line-height: 1.45; color: #8896a6; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Agent Mission Control · LinkedIn showcase</h1>
+      <span class="meta">1080×1350 · 77s · no audio · storyboard v2 (built stills)</span>
+    </header>
+    <p class="lede">
+      Twelve beats presented as a <b>recorded replay</b> of real runs. Each still is the key moment of its scene, captured from the built composition.
+      Full beat notes live in <b>STORYBOARD.md</b>; the scenes are in <b>compositions/</b>.
+    </p>
+    <div class="grid" id="grid"></div>
+    <script>
+      const FRAMES = [
+        ["0.0–4.5s", "Hook", "Five hard cuts across real runs. “Ask a hard question.” then “Watch an AI team work it out.”"],
+        ["4.5–11s", "Plan", "Landing prompt types the question; the orchestrator designs a team for it."],
+        ["11–18s", "Different teams", "Four questions, four different teams. Nothing is scripted."],
+        ["18–24.5s", "Real tools", "Tavily search and Firecrawl scrape over MCP; sources registered and cited."],
+        ["24.5–31.5s", "Cross-model critique", "Researchers run on GPT, critics on Claude; the routing rule is visible."],
+        ["31.5–37.5s", "Self-evaluation", "Gap detector scores 4.7/10 with open gaps and loops to round 2."],
+        ["37.5–43.5s", "Human in the loop", "Out of budget with gaps left, the run pauses and asks a human."],
+        ["43.5–50.5s", "Context and budgets", "Per-agent compaction: 17.9k → 5.0k tokens, with what was kept and removed."],
+        ["50.5–57s", "The result", "The cited brief is written live; real run stats count up."],
+        ["57–65.5s", "Under the hood", "Own agent loop on Trigger.dev, an append-only event log, live view and replay."],
+        ["65.5–70.5s", "Replay", "Scrub back through the run, then jump to round 2. No LLM calls."],
+        ["70.5–77s", "Try it yourself", "agentmissioncontrol.dev, the GitHub repo, and who built it."],
+      ];
+      const grid = document.getElementById("grid");
+      FRAMES.forEach(([time, title, note], i) => {
+        const n = String(i + 1).padStart(2, "0");
+        const cell = document.createElement("article");
+        cell.className = "cell";
+        cell.id = `frame-${n}`;
+        cell.innerHTML = `<img src="storyboard/frame-${n}.jpg" alt="Frame ${n}: ${title}" />
+          <div class="info"><div class="row"><span>${n} / 12</span><span>${time}</span></div><h2>${title}</h2><p>${note}</p></div>`;
+        grid.appendChild(cell);
+      });
+    </script>
+  </body>
+</html>

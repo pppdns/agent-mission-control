@@ -1,0 +1,11 @@
+{
+  "name": "amc-linkedin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.8.134 preview",
+    "check": "npx --yes hyperframes@0.8.134 check",
+    "render": "npx --yes hyperframes@0.8.134 render",
+    "publish": "npx --yes hyperframes@0.8.134 publish"
+  }
+}
