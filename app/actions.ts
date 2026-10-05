@@ -1,7 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { tasks } from "@trigger.dev/sdk";
+import { tasks, wait } from "@trigger.dev/sdk";
 import { checkBotId } from "botid/server";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -51,4 +51,52 @@ export async function createRun(_prev: CreateRunState, formData: FormData): Prom
   }
 
   redirect(`/run/${id}`);
+}
+
+export type ResolveHitlResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Answers a pending human approval. Anyone viewing the run may answer; the first answer wins via a conditional
+ * update, and only then is the task's wait token completed. The runtime records the outcome in the event log.
+ */
+export async function resolveHitl(runId: string, requestId: string, optionId: string): Promise<ResolveHitlResult> {
+  if (![runId, requestId, optionId].every((v) => typeof v === "string" && v.length > 0 && v.length < 64)) {
+    return { ok: false, error: "Invalid request." };
+  }
+  const verification = await checkBotId();
+  if (verification.isBot) return { ok: false, error: "Automated traffic can't answer." };
+  const db = supabase();
+  const { data: run } = await db.from("runs").select("status, hidden").eq("id", runId).maybeSingle();
+  if (!run || run.hidden) return { ok: false, error: "Run not found." };
+
+  const { data: request } = await db
+    .from("hitl_requests")
+    .select("token_id, options, status, deadline")
+    .eq("run_id", runId)
+    .eq("id", requestId)
+    .maybeSingle();
+  if (!request) return { ok: false, error: "This decision no longer exists." };
+  if (request.status !== "pending" || Date.parse(request.deadline) < Date.now()) {
+    return { ok: false, error: "Someone already answered, or the time ran out." };
+  }
+  const options = (request.options as { id: string }[] | null) ?? [];
+  if (!options.some((o) => o.id === optionId)) return { ok: false, error: "Unknown option." };
+
+  const { data: claimed, error } = await db
+    .from("hitl_requests")
+    .update({ status: "resolved", resolution: { optionId }, resolved_by: "visitor", resolved_at: new Date().toISOString() })
+    .eq("run_id", runId)
+    .eq("id", requestId)
+    .eq("status", "pending")
+    .select("id");
+  if (error) return { ok: false, error: "Could not record your answer. Please try again." };
+  if (!claimed?.length) return { ok: false, error: "Someone already answered." };
+
+  try {
+    await wait.completeToken(request.token_id, { optionId });
+  } catch {
+    await db.from("hitl_requests").update({ status: "pending", resolution: null, resolved_by: null, resolved_at: null }).eq("run_id", runId).eq("id", requestId);
+    return { ok: false, error: "Could not reach the run. Please try again." };
+  }
+  return { ok: true };
 }

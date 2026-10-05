@@ -6,8 +6,8 @@ export const LIMITS = {
   perDay: 10,
   maxInputChars: 2000,
   dailySpendCapUsd: 25,
-  /** A queued or running run older than this no longer blocks its visitor (covers the task's max duration plus queueing). */
-  activeWindowMinutes: 20,
+  /** A queued, running or waiting run older than this no longer blocks its visitor (run time, approvals and queueing). */
+  activeWindowMinutes: 30,
 };
 
 export function hashIp(ip: string): string {

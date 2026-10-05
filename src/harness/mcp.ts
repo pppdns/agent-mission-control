@@ -28,21 +28,43 @@ interface ExposeOptions<I> {
  * the agent never sees the server's other tools, and each exposure narrows the schema the model works with.
  */
 export class McpToolAdapter {
+  private reconnecting: Promise<void> | null = null;
+
   private constructor(
-    readonly serverName: string,
-    private readonly client: McpClient,
+    private readonly config: McpServerConfig,
+    private client: McpClient,
     private readonly remoteTools: Map<string, { description?: string; inputSchema: unknown }>,
   ) {}
 
-  static async connect(config: McpServerConfig): Promise<McpToolAdapter> {
-    const client = await createMCPClient({
+  get serverName() {
+    return this.config.name;
+  }
+
+  private static open(config: McpServerConfig): Promise<McpClient> {
+    return createMCPClient({
       transport: { type: "http", url: config.url, headers: config.headers },
       clientName: "agent-mission-control",
       initializationOptions: { timeout: 15_000 },
     });
+  }
+
+  static async connect(config: McpServerConfig): Promise<McpToolAdapter> {
+    const client = await McpToolAdapter.open(config);
     const listed = await client.listTools();
     const remote = new Map(listed.tools.map((t) => [t.name, { description: t.description, inputSchema: t.inputSchema as unknown }]));
-    return new McpToolAdapter(config.name, client, remote);
+    return new McpToolAdapter(config, client, remote);
+  }
+
+  /** Replaces the session, e.g. after the process was suspended for a human approval and the old one went stale. */
+  private reconnect(): Promise<void> {
+    this.reconnecting ??= (async () => {
+      const old = this.client;
+      this.client = await McpToolAdapter.open(this.config);
+      await old.close().catch(() => undefined);
+    })().finally(() => {
+      this.reconnecting = null;
+    });
+    return this.reconnecting;
   }
 
   expose<I>(opts: ExposeOptions<I>): ToolDef<I> {
@@ -68,7 +90,14 @@ export class McpToolAdapter {
   }
 
   private async call(tool: string, args: Record<string, unknown>): Promise<string> {
-    const result = await this.client.callTool({ name: tool, arguments: args });
+    let result: Awaited<ReturnType<McpClient["callTool"]>>;
+    try {
+      result = await this.client.callTool({ name: tool, arguments: args });
+    } catch {
+      // A thrown error (not an isError result) means the transport or session failed: reconnect once.
+      await this.reconnect();
+      result = await this.client.callTool({ name: tool, arguments: args });
+    }
     const text = (result.content as { type: string; text?: string }[])
       .filter((part) => part.type === "text" && typeof part.text === "string")
       .map((part) => part.text)

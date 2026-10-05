@@ -3,9 +3,10 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, Output, streamText, tool, type LanguageModel, type ModelMessage } from "ai";
 import type { ZodType } from "zod";
 import type { BudgetTracker } from "./budget";
-import { MODELS, ROUTES, EVENT_PREVIEW_CHARS, type ModelSpec } from "./config";
+import { MODELS, EVENT_PREVIEW_CHARS, type ModelSpec } from "./config";
 import type { EventBus } from "./events";
-import type { RouteName } from "./types";
+import type { ModelRouter, RouteDecision } from "./router";
+import type { CallKind } from "./types";
 
 export interface ApiKeys {
   openai?: string;
@@ -19,8 +20,12 @@ export interface ToolSpec {
 
 export interface CallRequest {
   agentId: string;
+  /** What the call is for; the router picks the model from it. */
+  kind: CallKind;
+  /** Human-readable label shown in the trace. */
   purpose: string;
-  route: RouteName;
+  /** Estimated prompt size, used by the router's large-context rule. */
+  estimatedInputTokens?: number;
   step?: number;
   system: string;
   messages: ModelMessage[];
@@ -41,6 +46,7 @@ export interface CallResult {
   toolCalls: { id: string; name: string; input: unknown }[];
   structured: unknown | null;
   responseMessages: ModelMessage[];
+  inputTokens: number;
 }
 
 export class BudgetStop extends Error {
@@ -51,8 +57,6 @@ export class BudgetStop extends Error {
 }
 
 const STREAM_EMIT_INTERVAL_MS = 1500;
-
-let callCounter = 0;
 
 export function computeCost(
   spec: ModelSpec,
@@ -79,14 +83,27 @@ function capJson(value: unknown, max = EVENT_PREVIEW_CHARS): unknown {
 export class LlmClient {
   private readonly openai;
   private readonly anthropic;
+  private counter = 0;
+  /** Distinguishes call ids made after a resume from ids of calls interrupted by the crash. */
+  private prefix = "";
 
   constructor(
     keys: ApiKeys,
     private readonly bus: EventBus,
     private readonly budget: BudgetTracker,
+    private readonly router: ModelRouter,
   ) {
     this.openai = createOpenAI({ apiKey: keys.openai });
     this.anthropic = createAnthropic({ apiKey: keys.anthropic });
+  }
+
+  snapshot() {
+    return { counter: this.counter };
+  }
+
+  restore(state: { counter: number }, epoch: string) {
+    this.counter = state.counter;
+    this.prefix = epoch;
   }
 
   private model(spec: ModelSpec): LanguageModel {
@@ -94,17 +111,34 @@ export class LlmClient {
   }
 
   async call(req: CallRequest): Promise<CallResult> {
-    const route = ROUTES[req.route];
-    const candidates = [route.model, route.fallback];
+    const primary = this.router.decide({ kind: req.kind, estimatedInputTokens: req.estimatedInputTokens });
+    const decisions: RouteDecision[] = [primary, this.router.fallback(primary)];
     let lastError: unknown;
 
-    for (let i = 0; i < candidates.length; i++) {
+    for (let i = 0; i < decisions.length; i++) {
       const stopReason = this.budget.hardLimitReason();
       if (stopReason) throw new BudgetStop(stopReason);
 
-      const spec = MODELS[candidates[i]];
-      const callId = `llm${++callCounter}`;
+      const decision = decisions[i];
+      const spec = MODELS[decision.model];
+      const callId = `${this.prefix}llm${++this.counter}`;
       const promptChars = req.system.length + JSON.stringify(req.messages).length;
+      this.bus.emit(
+        {
+          type: "routing.decided",
+          data: {
+            callId,
+            rule: decision.rule,
+            route: decision.route,
+            provider: decision.provider,
+            model: decision.model,
+            reason: decision.reason,
+            strategy: decision.strategy,
+            purpose: req.purpose,
+          },
+        },
+        req.agentId,
+      );
       this.bus.emit(
         {
           type: "llm.requested",
@@ -113,7 +147,8 @@ export class LlmClient {
             purpose: req.purpose,
             provider: spec.provider,
             model: spec.id,
-            route: req.route,
+            route: decision.route,
+            rule: decision.rule,
             messageCount: req.messages.length,
             promptChars,
             step: req.step ?? null,
@@ -162,8 +197,10 @@ export class LlmClient {
           toolCalls: result.toolCalls,
           structured: result.structured,
           responseMessages: result.responseMessages,
+          inputTokens: result.usage.inputTokens,
         };
       } catch (error) {
+        if (error instanceof BudgetStop) throw error;
         lastError = error;
         const message = error instanceof Error ? error.message : String(error);
         this.bus.emit(
@@ -173,11 +210,11 @@ export class LlmClient {
           },
           req.agentId,
         );
-        if (i + 1 < candidates.length) {
+        if (i + 1 < decisions.length) {
           this.bus.emit(
             {
               type: "agent.retrying",
-              data: { reason: `${spec.id} failed: ${message.slice(0, 160)}`, attempt: i + 1, fallbackModel: candidates[i + 1] },
+              data: { reason: `${spec.id} failed: ${message.slice(0, 160)}`, attempt: i + 1, fallbackModel: decisions[i + 1].model },
             },
             req.agentId,
           );

@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
     "trigger:dev": "npx trigger.dev@4.7.2 dev",
     "trigger:deploy": "npx trigger.dev@4.7.2 deploy"
   },
@@ -26,6 +28,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@trigger.dev/build": "4.7.2",
     "@types/node": "^20",
@@ -36,7 +39,8 @@
     "supabase": "^2.119.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.3"
   },
   "packageManager": "pnpm@11.9.0"
 }

@@ -28,8 +28,27 @@ BotID (`botid` package) protects the run-creation server action; it only verifie
 
 ```bash
 pnpm tsx --env-file=.env.local scripts/run-local.mts "your prompt"
+# halve the context budgets so compaction happens, then simulate a crash after cp3 and resume from it
+pnpm tsx --env-file=.env.local scripts/run-local.mts --low-context --resume-from=cp3 "your prompt"
 ```
 
-## Not in phase 1
+Human decisions are auto-answered with the recommended option after 1.5 s. The event log is written to `/tmp/amc-local-events.json`.
 
-loops, human-in-the-loop, context compaction, replay controls, routing UI, the `checkpoints` table.
+## Tests
+
+```bash
+pnpm test        # vitest: reducer and replay on recorded runs, checkpoint round trip, compaction, decision rule
+pnpm test:e2e    # Playwright: landing page, replay controls, human-decision card (run pages render recorded fixtures)
+```
+
+`tests/fixtures/*.json` are event logs from real local runs. With `E2E_FIXTURES=1`, `/run/fixture-*` renders without a database row and the tests serve the SSE stream from the fixture.
+
+## Phase 2 at a glance
+
+- **Phase state machine** (`src/harness/runtime.ts`): plan, research, critique, evaluate, HITL, synthesize. A checkpoint is written after every transition; a Trigger.dev retry resumes from the latest one (`run.resumed`).
+- **Gap Detector and loops** (`src/harness/evaluator.ts`): scores the draft, names gaps, and the pure `decideNext` rule picks synthesize, another round (re-tasked researchers, an optional verifier or extra researcher), or a human decision.
+- **Human in the loop** (`src/harness/approvals.ts`, `src/trigger/approvals.ts`): Trigger.dev wait tokens; anyone viewing a live run can answer, the first answer wins, and the recommended option is used on timeout. The budget clock is paused while waiting.
+- **Context management** (`src/harness/context-window.ts`): per-agent context measurement, pruning of handed-in material first, then LLM summaries of older tool turns (deterministic truncation as fallback). Every compaction is inspectable.
+- **Model routing** (`src/harness/router.ts`): named per-call rules in `config.ts`, escalation for large prompts, provider fallback; the Routing tab shows decisions and spend per model.
+- **Budgets**: live `budget.updated` snapshots, per-agent search allowances, a search reserve for follow-up rounds, and a one-time extension a visitor can approve.
+- **Replay** (`src/components/use-run-player.ts`): the same event log drives live view and replay, with speed control, milestone markers and jump-to-event from the trace.

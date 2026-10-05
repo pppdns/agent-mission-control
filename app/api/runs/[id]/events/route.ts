@@ -1,4 +1,4 @@
-import { failRunExternally, STALE_RUN_MS } from "@/server/runs";
+import { failRunExternally, isRunStale } from "@/server/runs";
 import { supabase } from "@/server/supabase";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +9,7 @@ const POLL_MS = 700;
 const HEARTBEAT_MS = 15_000;
 const SESSION_MS = 270_000;
 const PAGE = 400;
+const STALE_CHECK_MS = 30_000;
 
 const NO_STORE = { "cache-control": "no-store, no-transform", "x-robots-tag": "noindex, nofollow" };
 
@@ -36,6 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     async start(controller) {
       const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
       let lastWrite = Date.now();
+      let lastStaleCheck = 0;
       let closed = false;
       request.signal.addEventListener("abort", () => {
         closed = true;
@@ -64,9 +66,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           } else {
             const { data: current } = await db.from("runs").select("status, hidden, created_at").eq("id", id).maybeSingle();
             if (!current || current.hidden) break;
-            if ((current.status === "queued" || current.status === "running") && Date.now() - Date.parse(current.created_at) > STALE_RUN_MS) {
-              await failRunExternally(id, "The run timed out before it finished.");
-              continue;
+            if (Date.now() - lastStaleCheck > STALE_CHECK_MS) {
+              lastStaleCheck = Date.now();
+              if (await isRunStale(id, current)) {
+                await failRunExternally(id, "The run stopped making progress and was marked failed.");
+                continue;
+              }
             }
             if (current.status === "completed" || current.status === "failed") {
               const { count } = await db

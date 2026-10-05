@@ -838,6 +838,8 @@ A good first version does not need every feature.
 
 ## Phase 1
 
+Status: shipped.
+
 Build:
 
 - prompt input
@@ -854,6 +856,8 @@ Build:
 - persisted run state
 
 ## Phase 2
+
+Status: shipped. HITL is kept simple for the demo: anyone viewing a live run can answer, the first answer wins, and the recommended option is applied when nobody answers in time.
 
 Add:
 
@@ -1170,13 +1174,15 @@ Initial per-run limits:
 
 ```text
 max input length:        2,000 characters
-max agents per run:      6 (including the orchestrator)
-max LLM calls:           30
-max research loops:      2
-max web searches:        8   (Tavily)
+max agents per run:      8 (orchestrator, up to 4 workers, gap detector, editor, plus one loop spawn)
+max LLM calls:           30  (4 held back for the gap detector and the editor)
+max research loops:      2   (follow-up rounds after the first)
+max web searches:        8   (Tavily; 2 held back for follow-up rounds)
 max page fetches:        2   (Firecrawl)
 max active run time:     5 min (time spent waiting on HITL doesn't count)
 per-run cost cap:        $0.50
+max HITL requests:       2, each answered within 5 min or the recommended option is used
+one-time extension:      +3 searches, +1 fetch, +8 LLM calls, +$0.20, +90 s, only with visitor approval
 ```
 
 When a limit is reached, the run doesn't fail. The orchestrator is told that the budget is exhausted and moves straight to synthesis with the evidence it already has. That moment is itself a visible event ("budget exhausted → synthesizing"), which makes for good demo material.
@@ -1206,6 +1212,7 @@ All three model IDs are confirmed to be available on the project's API keys.
 Rules:
 
 - All routing rules live in one explicit config. Every routing decision emits an event with the route name and the reason, and the UI shows it as the model badge on the agent.
+- Rules are named and chosen per LLM call by its kind (`complex_planning`, `simple_parallel_research`, `critique_cross_family`, `complex_gap_detection`, `complex_synthesis`, `simple_compaction`). Prompts estimated above 20k tokens on the cheap route escalate (`escalate_large_context`); provider errors use `fallback_provider_error`.
 - If a provider errors or times out, fall back to the other provider. The fallback is shown as a visible retry event.
 - v1 ships with the `Auto` strategy only. `Cheap` / `Fast` / `Best` come later.
 
@@ -1217,13 +1224,15 @@ Use demo context thresholds that cause compaction to happen visibly.
 
 Do not necessarily use the provider's maximum context.
 
-Example:
+Shipped values (`CONTEXT_BUDGETS` in `src/harness/config.ts`):
 
 ```text
-agent working context: 30k
-compaction threshold:  24k
-reserved output:        6k
+                 window   compaction threshold   reserved output
+worker loops       12k             7k                  3k
+synthesis calls    24k            12k                  9k
 ```
+
+Tool loops prune handed-in material (brief excerpts, source digests) first, and summarize older tool turns with `gpt-6-luna` only when that is not enough; the latest call and its results are always kept together. Single-shot calls (gap detector, editor) only prune. Token counts are estimated at 4 characters per token and calibrated per agent against provider-reported input tokens.
 
 Tune based on actual model behavior.
 

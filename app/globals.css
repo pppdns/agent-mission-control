@@ -68,32 +68,34 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* HUD panel: hairline frame with corner brackets */
-.hud {
-  position: relative;
-  background: linear-gradient(180deg, rgb(16 22 29 / 0.82), rgb(11 15 20 / 0.92));
-  border: 1px solid var(--color-line);
-  border-radius: 4px;
-}
-.hud::before,
-.hud::after {
-  content: "";
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  pointer-events: none;
-  border-color: var(--color-line-bright);
-  border-style: solid;
-}
-.hud::before {
-  top: -1px;
-  left: -1px;
-  border-width: 1px 0 0 1px;
-}
-.hud::after {
-  bottom: -1px;
-  right: -1px;
-  border-width: 0 1px 1px 0;
+/* HUD panel: hairline frame with corner brackets. Layered so utilities such as `absolute` can override it. */
+@layer components {
+  .hud {
+    position: relative;
+    background: linear-gradient(180deg, rgb(16 22 29 / 0.82), rgb(11 15 20 / 0.92));
+    border: 1px solid var(--color-line);
+    border-radius: 4px;
+  }
+  .hud::before,
+  .hud::after {
+    content: "";
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    border-color: var(--color-line-bright);
+    border-style: solid;
+  }
+  .hud::before {
+    top: -1px;
+    left: -1px;
+    border-width: 1px 0 0 1px;
+  }
+  .hud::after {
+    bottom: -1px;
+    right: -1px;
+    border-width: 0 1px 1px 0;
+  }
 }
 
 .panel-title {
@@ -197,6 +199,75 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+@keyframes badge-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes squeeze {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+  40% {
+    transform: scaleX(0.94);
+  }
+}
+
+.anim-badge {
+  animation: badge-pop 2.2s ease-out both;
+}
+.anim-squeeze {
+  animation: squeeze 0.7s ease-in-out 2;
+}
+
+/* Replay scrubber: invisible track (the bar is drawn underneath), small amber thumb. */
+.replay-range {
+  appearance: none;
+  background: transparent;
+}
+.replay-range::-webkit-slider-runnable-track {
+  height: 12px;
+  background: transparent;
+}
+.replay-range::-moz-range-track {
+  height: 12px;
+  background: transparent;
+}
+.replay-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--color-signal);
+  box-shadow: 0 0 0 3px rgb(255 181 71 / 0.2);
+}
+.replay-range::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--color-signal);
+  box-shadow: 0 0 0 3px rgb(255 181 71 / 0.2);
+}
+.replay-range:focus-visible {
+  outline: 1px solid var(--color-signal);
+  outline-offset: 2px;
 }
 
 .anim-spawn {

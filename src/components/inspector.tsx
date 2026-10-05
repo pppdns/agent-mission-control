@@ -1,6 +1,7 @@
 "use client";
 
-import type { AgentView, LlmView, RunView, ToolView } from "@/harness/view";
+import type { AgentView, CheckpointView, CompactionView, EvaluationView, HitlView, LlmView, RunView, ToolView } from "@/harness/view";
+import { ContextMeter } from "./context-meter";
 import type { Selection } from "./selection";
 import { formatCost, formatMs, formatTokens, JsonBlock, ModelBadge, Pill, RoleChip, ROLE_META } from "./theme";
 
@@ -42,6 +43,7 @@ function AgentInspector({ agent, view, onSelect }: { agent: AgentView; view: Run
   const received = view.messages.filter((m) => m.message.to === info.id);
   const llmCalls = Object.values(view.llm).filter((l) => l.agentId === info.id);
   const toolCalls = Object.values(view.toolCalls).filter((t) => t.agentId === info.id);
+  const compactions = view.compactionOrder.map((id) => view.compactions[id]).filter((c) => c.agentId === info.id);
   const name = (id: string) => view.agents[id]?.info.name ?? id;
   return (
     <>
@@ -49,19 +51,37 @@ function AgentInspector({ agent, view, onSelect }: { agent: AgentView; view: Run
         <RoleChip role={info.role} />
         <ModelBadge provider={info.provider} model={info.model} />
         <Pill tone={agent.status === "completed" ? "good" : agent.status === "failed" ? "bad" : agent.status === "running" ? "signal" : "neutral"}>{agent.status}</Pill>
+        {agent.round > 1 && <Pill tone="signal">round {agent.round}</Pill>}
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
         <Stat label="Tokens" value={formatTokens(agent.inputTokens + agent.outputTokens)} />
         <Stat label="Cost" value={formatCost(agent.costUsd)} />
         <Stat label="LLM calls" value={agent.llmCalls} />
+        <Stat label="Tool calls" value={agent.toolCalls} />
+        <Stat label="Retries" value={agent.retries} />
+        <Stat label="Compactions" value={agent.compactions} />
       </div>
       <Field label="Current goal">{info.goal}</Field>
       {info.angle && <Field label="Angle">{info.angle}</Field>}
       <Field label="Model routing">
         <div className="text-[12.5px] text-ink-dim">
-          <span className="num text-ink">{info.route}</span> → <span className="num text-ink">{info.model}</span>
+          <span className="num text-ink">{info.rule ?? info.route}</span> → <span className="num text-ink">{info.model}</span>
           <div className="mt-1">{info.routeReason}</div>
         </div>
+      </Field>
+      <Field label="Context window">
+        <ContextMeter agent={agent} />
+        {compactions.length > 0 && (
+          <ul className="mt-2 space-y-0.5">
+            {compactions.map((c) => (
+              <li key={c.compactionId}>
+                <button type="button" onClick={() => onSelect({ type: "compaction", id: c.compactionId })} className="num w-full rounded-sm px-2 py-1 text-left text-[11.5px] text-[#c792ea] hover:bg-panel-3">
+                  ⇲ {c.strategy} · {formatTokens(c.beforeTokens)} → {formatTokens(c.afterTokens)} tokens
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </Field>
       <Field label="Tool permissions">
         {info.tools.length ? (
@@ -153,11 +173,12 @@ function AgentInspector({ agent, view, onSelect }: { agent: AgentView; view: Run
 
 function LlmInspector({ call, view }: { call: LlmView; view: RunView }) {
   const agent = view.agents[call.agentId]?.info;
+  const routing = view.routing.findLast((r) => r.callId === call.callId);
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
         <ModelBadge provider={call.provider} model={call.model} />
-        <Pill tone={call.status === "done" ? "good" : call.status === "failed" ? "bad" : "signal"}>{call.status}</Pill>
+        <Pill tone={call.status === "done" ? "good" : call.status === "failed" || call.status === "interrupted" ? "bad" : "signal"}>{call.status}</Pill>
         {agent && <RoleChip role={agent.role} name={agent.name} />}
       </div>
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -172,9 +193,9 @@ function LlmInspector({ call, view }: { call: LlmView; view: RunView }) {
         <Field label="Streaming">{call.streamedChars.toLocaleString()} characters received so far</Field>
       )}
       <Field label="Purpose">{call.purpose}{call.step ? ` (step ${call.step})` : ""}</Field>
-      <Field label="Routing reason">
-        <span className="num">{call.route}</span> → <span className="num">{call.model}</span>
-        <div className="mt-1 text-[12.5px] text-ink-dim">{agent?.routeReason}</div>
+      <Field label="Routing">
+        <span className="num">{call.rule ?? call.route}</span> → <span className="num">{call.model}</span>
+        <div className="mt-1 text-[12.5px] text-ink-dim">{routing?.reason ?? agent?.routeReason}</div>
       </Field>
       <Field label="Prompt size">{call.messageCount} messages · {call.promptChars.toLocaleString()} characters</Field>
       {call.error && <Field label="Error"><span className="text-coral">{call.error}</span></Field>}
@@ -213,6 +234,142 @@ function ToolInspector({ call, view }: { call: ToolView; view: RunView }) {
   );
 }
 
+function CompactionInspector({ c, view }: { c: CompactionView; view: RunView }) {
+  const agent = view.agents[c.agentId]?.info;
+  const saved = c.beforeTokens > 0 && c.status === "done" ? Math.round((1 - c.afterTokens / c.beforeTokens) * 100) : null;
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="neutral">{c.strategy}</Pill>
+        <Pill tone={c.status === "done" ? "good" : "signal"}>{c.status}</Pill>
+        {agent && <RoleChip role={agent.role} name={agent.name} />}
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <Stat label="Before" value={formatTokens(c.beforeTokens)} />
+        <Stat label="After" value={c.status === "done" ? formatTokens(c.afterTokens) : "…"} />
+        <Stat label="Saved" value={saved === null ? "…" : `${saved}%`} />
+      </div>
+      <Field label="Why">{c.reason}{c.threshold ? ` (threshold ${c.threshold.toLocaleString()} tokens)` : ""}</Field>
+      <Field label="Removed"><List items={c.removed} /></Field>
+      <Field label="Summarized"><List items={c.summarized} /></Field>
+      <Field label="Preserved verbatim"><List items={c.preserved} /></Field>
+      {c.compactedState && <Field label="Compacted working state"><JsonBlock value={c.compactedState} max={4000} /></Field>}
+    </>
+  );
+}
+
+function EvaluationInspector({ e, view, onSelect }: { e: EvaluationView; view: RunView; onSelect: (s: Selection) => void }) {
+  const loop = view.loops.find((l) => l.round === e.round + 1 && l.seq > e.seq);
+  const decision = e.decision === "synthesize" ? "Write the final brief" : e.decision === "loop" ? `Research round ${e.round + 1}` : "Ask the visitor";
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <RoleChip role="evaluator" />
+        <Pill tone={e.decision === "synthesize" ? "good" : "signal"}>{decision}</Pill>
+        <Pill tone="neutral">after round {e.round}</Pill>
+      </div>
+      <div className="mt-3 grid grid-cols-4 gap-2">
+        <Stat label="Score" value={`${e.score}/10`} />
+        <Stat label="Coverage" value={`${e.rubric.coverage}/5`} />
+        <Stat label="Support" value={`${e.rubric.support}/5`} />
+        <Stat label="Balance" value={`${e.rubric.balance}/5`} />
+      </div>
+      <Field label="Decision">{e.reason}</Field>
+      <Field label="Enough evidence?">{e.enoughEvidence ? "Yes, by the Gap Detector's judgement" : "No"}</Field>
+      {e.conflict && <Field label="Conflict"><span className="text-signal">{e.conflict}</span></Field>}
+      <Field label={`Gaps (${e.gaps.length})`}>
+        {e.gaps.length ? (
+          <ul className="space-y-2">
+            {e.gaps.map((g, i) => (
+              <li key={i} className="rounded-sm border border-line bg-void/50 p-2">
+                <div className="text-[12.5px] text-ink">{g.question}</div>
+                <div className="mt-0.5 text-[11.5px] text-ink-dim">Angle: {g.angle}</div>
+                <div className="mt-0.5 text-[11.5px] text-ink-faint">{g.why}</div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="text-ink-faint">None</span>
+        )}
+      </Field>
+      {e.unsupportedBlockIds.length > 0 && (
+        <Field label="Weakly supported claims"><span className="num text-[12px]">{e.unsupportedBlockIds.join(", ")}</span></Field>
+      )}
+      {loop && (
+        <Field label={`Round ${loop.round} assignments`}>
+          <ul className="space-y-1">
+            {loop.assignments.map((a) => (
+              <li key={a.agentId}>
+                <button type="button" onClick={() => onSelect({ type: "agent", id: a.agentId })} className="w-full rounded-sm px-2 py-1 text-left text-[12px] hover:bg-panel-3">
+                  <span className="text-ink">{view.agents[a.agentId]?.info.name ?? a.agentId}</span>
+                  <span className="ml-2 text-ink-dim">{a.goal}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Field>
+      )}
+    </>
+  );
+}
+
+function HitlInspector({ h }: { h: HitlView }) {
+  const chosen = h.options.find((o) => o.id === h.optionId);
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="bad">{h.reason === "conflict" ? "conflicting evidence" : "budget"}</Pill>
+        <Pill tone={h.status === "resolved" ? "good" : "signal"}>{h.status}</Pill>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <Stat label="Answered by" value={h.resolvedBy ?? "…"} />
+        <Stat label="Waited" value={h.waitedMs === null ? "…" : formatMs(h.waitedMs)} />
+        <Stat label="Timeout" value={formatMs(h.timeoutMs)} />
+      </div>
+      <Field label="Question">{h.question}</Field>
+      {h.context && <Field label="Context">{h.context}</Field>}
+      <Field label="Options">
+        <ul className="space-y-1.5">
+          {h.options.map((o) => (
+            <li key={o.id} className={`rounded-sm border p-2 ${o.id === h.optionId ? "border-lime/50 bg-lime/5" : "border-line"}`}>
+              <div className="flex items-center gap-2 text-[12.5px] text-ink">
+                {o.label}
+                {o.id === h.recommended && <span className="label !text-[9px] !text-signal">recommended</span>}
+                {o.id === h.optionId && <span className="label !text-[9px] !text-lime">chosen</span>}
+              </div>
+              <div className="mt-0.5 text-[11.5px] text-ink-faint">{o.description}</div>
+            </li>
+          ))}
+        </ul>
+      </Field>
+      {chosen && <Field label="Effect"><span className="num">{chosen.action}</span></Field>}
+      <div className="mt-2 text-[11.5px] text-ink-faint">The research clock was paused while the run waited, so the decision did not use up the time budget.</div>
+    </>
+  );
+}
+
+function CheckpointInspector({ c, view }: { c: CheckpointView; view: RunView }) {
+  const resumes = view.resumes.filter((r) => r.checkpointId === c.checkpointId);
+  return (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <Pill tone="neutral">{c.phase}</Pill>
+        <Pill tone="neutral">round {c.round}</Pill>
+      </div>
+      <Field label="Saved at">{c.label} · {formatMs(c.ts - (view.startTs ?? c.ts))} into the run</Field>
+      <Field label="What it holds">
+        The mission state, every agent&apos;s status and messages, the evidence store, the shared brief, budget usage and each
+        agent&apos;s compacted context. If the worker crashes, the next attempt restores this and continues from the next phase.
+      </Field>
+      {resumes.length > 0 && (
+        <Field label="Used for recovery">
+          <List items={resumes.map((r) => `${formatMs(r.ts - (view.startTs ?? r.ts))}: ${r.reason}`)} />
+        </Field>
+      )}
+    </>
+  );
+}
+
 export function Inspector({ view, selection, onSelect, onClose }: { view: RunView; selection: Selection; onSelect: (s: Selection) => void; onClose: () => void }) {
   if (!selection) return null;
   const name = (id: string) => view.agents[id]?.info.name ?? id;
@@ -230,6 +387,20 @@ export function Inspector({ view, selection, onSelect, onClose }: { view: RunVie
   } else if (selection?.type === "tool" && view.toolCalls[selection.id]) {
     title = "Tool call";
     body = <ToolInspector call={view.toolCalls[selection.id]} view={view} />;
+  } else if (selection?.type === "compaction" && view.compactions[selection.id]) {
+    title = "Context compaction";
+    body = <CompactionInspector c={view.compactions[selection.id]} view={view} />;
+  } else if (selection?.type === "evaluation" && view.evaluations.some((e) => String(e.seq) === selection.id)) {
+    const e = view.evaluations.find((x) => String(x.seq) === selection.id)!;
+    title = `Gap Detector · round ${e.round}`;
+    body = <EvaluationInspector e={e} view={view} onSelect={onSelect} />;
+  } else if (selection?.type === "hitl" && view.hitl[selection.id]) {
+    title = "Human decision";
+    body = <HitlInspector h={view.hitl[selection.id]} />;
+  } else if (selection?.type === "checkpoint" && view.checkpoints.some((c) => c.checkpointId === selection.id)) {
+    const c = view.checkpoints.findLast((x) => x.checkpointId === selection.id)!;
+    title = `Checkpoint ${c.checkpointId}`;
+    body = <CheckpointInspector c={c} view={view} />;
   } else if (selection?.type === "message" || selection?.type === "pair") {
     const messages =
       selection.type === "message"

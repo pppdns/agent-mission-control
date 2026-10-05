@@ -5,11 +5,25 @@ export type AgentRole =
   | "researcher"
   | "skeptic"
   | "evidence_verifier"
+  | "evaluator"
   | "editor";
 
 export type Provider = "openai" | "anthropic";
 
 export type RouteName = "complex" | "simple" | "critique";
+
+export type RuleName =
+  | "complex_planning"
+  | "simple_parallel_research"
+  | "critique_cross_family"
+  | "complex_gap_detection"
+  | "complex_synthesis"
+  | "simple_compaction"
+  | "escalate_large_context"
+  | "fallback_provider_error";
+
+/** What an LLM call is for; the router maps it to a rule. */
+export type CallKind = "plan" | "research" | "critique" | "verify" | "evaluate" | "synthesis" | "compaction";
 
 export type MessageType =
   | "finding"
@@ -50,10 +64,14 @@ export interface AgentInfo {
   angle: string | null;
   parentId: string | null;
   route: RouteName;
+  /** Missing on runs recorded before per-call routing existed. */
+  rule?: RuleName;
   routeReason: string;
   provider: Provider;
   model: string;
   tools: string[];
+  /** Research round the agent was spawned in (1 = initial team). */
+  round?: number;
 }
 
 export interface AgentMessage {
@@ -169,6 +187,70 @@ export interface Limits {
   maxCostUsd: number;
   workerStepLimit: number;
   editorReserveCalls: number;
+  /** Follow-up research rounds after the initial one. */
+  maxResearchLoops: number;
+  /** Web searches held back from the initial round for follow-up loops. */
+  loopSearchReserve: number;
+  maxHitlRequests: number;
+  hitlTimeoutMs: number;
+  /** Extra active time the final synthesis may use past maxRunMs before the hard stop. */
+  synthesisGraceMs: number;
+}
+
+export interface BudgetExtension {
+  searches: number;
+  fetches: number;
+  llmCalls: number;
+  costUsd: number;
+  runMs: number;
+}
+
+export interface BudgetSnapshot {
+  searches: { used: number; limit: number };
+  fetches: { used: number; limit: number };
+  llmCalls: { used: number; limit: number };
+  costUsd: { used: number; limit: number };
+  activeMs: number;
+  maxRunMs: number;
+  allowances: Record<string, { allowance: number; used: number }>;
+  loopReserve: number;
+  extended: boolean;
+  exhausted: string | null;
+}
+
+export type ContextCategory = "system" | "workingState" | "recentTurns" | "toolResults" | "retrieved";
+
+export const CONTEXT_CATEGORIES: ContextCategory[] = ["system", "workingState", "recentTurns", "toolResults", "retrieved"];
+
+export interface ContextBudget {
+  windowTokens: number;
+  compactAtTokens: number;
+  reservedOutputTokens: number;
+}
+
+export interface HitlOption {
+  id: string;
+  label: string;
+  description: string;
+  action: "research_more" | "investigate" | "extend_budget" | "continue";
+  /** For "investigate": the index of the gap to follow up. */
+  gapIndex: number | null;
+}
+
+export interface HitlRequest {
+  id: string;
+  reason: "conflict" | "budget";
+  question: string;
+  context: string;
+  options: HitlOption[];
+  recommended: string;
+  timeoutMs: number;
+}
+
+export interface Gap {
+  question: string;
+  angle: string;
+  why: string;
 }
 
 export interface Totals {
@@ -193,4 +275,4 @@ export const EMPTY_TOTALS: Totals = {
   agents: 0,
 };
 
-export type RunStatus = "queued" | "running" | "completed" | "failed";
+export type RunStatus = "queued" | "running" | "waiting" | "completed" | "failed";

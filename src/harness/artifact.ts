@@ -143,18 +143,31 @@ export class ArtifactManager {
     return true;
   }
 
+  /** Source ids cited anywhere in the brief. */
+  citedSourceIds(): Set<string> {
+    return new Set(this.artifact.sections.flatMap((s) => s.blocks.flatMap((b) => b.sourceIds)));
+  }
+
+  /** Claims that no verifier has looked at yet. */
+  uncheckedClaimCount(): number {
+    return this.artifact.sections.reduce((n, s) => n + s.blocks.filter((b) => b.kind === "claim" && b.verdict === "unchecked").length, 0);
+  }
+
   /** Text rendering with stable block ids, used inside agent prompts. */
-  render(opts: { onlySections?: SectionId[] } = {}): string {
+  render(opts: { onlySections?: SectionId[]; onlyUnchecked?: boolean; withComments?: boolean } = {}): string {
     const lines: string[] = [];
+    const withComments = opts.withComments ?? true;
     for (const section of this.artifact.sections) {
       if (opts.onlySections && !opts.onlySections.includes(section.id)) continue;
-      if (section.blocks.length === 0) continue;
+      const blocks = opts.onlyUnchecked ? section.blocks.filter((b) => b.kind === "claim" && b.verdict === "unchecked") : section.blocks;
+      if (blocks.length === 0) continue;
       lines.push(`## ${section.title}`);
-      for (const block of section.blocks) {
+      for (const block of blocks) {
         const cites = block.sourceIds.length ? ` [${block.sourceIds.join(", ")}]` : "";
         const conf = block.confidence ? ` (confidence: ${block.confidence})` : "";
         const verdict = block.verdict !== "unchecked" ? ` {verdict: ${block.verdict}}` : "";
         lines.push(`- (${block.id}) ${block.text}${cites}${conf}${verdict}`);
+        if (!withComments) continue;
         for (const c of block.comments) {
           lines.push(`    ↳ ${c.kind}${c.severity ? `/${c.severity}` : ""}: ${c.text}`);
         }
@@ -166,6 +179,16 @@ export class ArtifactManager {
   async settle() {
     await Promise.allSettled(this.pending);
     this.pending = [];
+  }
+
+  serialize(): { artifact: Artifact; blockCounter: number; commentCounter: number } {
+    return { artifact: structuredClone(this.artifact), blockCounter: this.blockCounter, commentCounter: this.commentCounter };
+  }
+
+  restore(state: { artifact: Artifact; blockCounter: number; commentCounter: number }) {
+    this.artifact = structuredClone(state.artifact);
+    this.blockCounter = state.blockCounter;
+    this.commentCounter = state.commentCounter;
   }
 
   private commit(section: ArtifactSection, change: "append" | "rewrite" | "annotate", summary: string, author: string) {

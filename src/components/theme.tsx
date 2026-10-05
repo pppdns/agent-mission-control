@@ -5,6 +5,7 @@ export const ROLE_META: Record<AgentRole, { label: string; color: string; glyph:
   researcher: { label: "Researcher", color: "#4fd1e6", glyph: "⌕" },
   skeptic: { label: "Skeptic", color: "#ff6b5a", glyph: "⚑" },
   evidence_verifier: { label: "Verifier", color: "#9be564", glyph: "✓" },
+  evaluator: { label: "Gap Detector", color: "#c792ea", glyph: "⌖" },
   editor: { label: "Editor", color: "#ffb547", glyph: "✎" },
 };
 

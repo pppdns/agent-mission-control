@@ -1,6 +1,6 @@
 import type { RunEvent } from "../harness/events";
-import type { RunPatch, RunStore } from "../harness/store";
-import type { AgentInfo, AgentMessage, Artifact, Source } from "../harness/types";
+import type { CheckpointRecord, ResumePoint, RunPatch, RunStore } from "../harness/store";
+import { EMPTY_TOTALS, type AgentInfo, type AgentMessage, type AgentStatus, type Artifact, type Source, type Totals } from "../harness/types";
 import { supabase } from "./supabase";
 
 function check(error: { message: string } | null, what: string) {
@@ -35,11 +35,16 @@ export class SupabaseRunStore implements RunStore {
     check(error, "update run");
   }
 
-  async saveAgent(runId: string, agent: AgentInfo, status: string) {
+  async saveAgent(runId: string, agent: AgentInfo, status: AgentStatus) {
     const { error } = await supabase()
       .from("agents")
       .upsert({ run_id: runId, id: agent.id, role: agent.role, name: agent.name, status, info: agent });
     check(error, "save agent");
+  }
+
+  async updateAgentStatus(runId: string, agentId: string, status: AgentStatus) {
+    const { error } = await supabase().from("agents").update({ status }).eq("run_id", runId).eq("id", agentId);
+    check(error, "update agent status");
   }
 
   async saveMessage(runId: string, m: AgentMessage) {
@@ -69,5 +74,35 @@ export class SupabaseRunStore implements RunStore {
       .from("artifact_versions")
       .upsert({ run_id: runId, version: artifact.version, author: authorId, summary, content: artifact });
     check(error, "save artifact version");
+  }
+
+  async saveCheckpoint(runId: string, cp: CheckpointRecord) {
+    const { error } = await supabase().from("checkpoints").upsert({
+      run_id: runId,
+      id: cp.id,
+      seq: cp.seq,
+      phase: cp.phase,
+      round: cp.round,
+      label: cp.label,
+      state: cp.state,
+    });
+    check(error, "save checkpoint");
+  }
+
+  async loadResumePoint(runId: string): Promise<ResumePoint> {
+    const db = supabase();
+    const [checkpoint, last, run] = await Promise.all([
+      db.from("checkpoints").select("id, seq, phase, round, label, state").eq("run_id", runId).order("seq", { ascending: false }).limit(1).maybeSingle(),
+      db.from("events").select("seq").eq("run_id", runId).order("seq", { ascending: false }).limit(1).maybeSingle(),
+      db.from("runs").select("totals").eq("id", runId).maybeSingle(),
+    ]);
+    check(checkpoint.error, "load checkpoint");
+    check(last.error, "load last event");
+    const totals = run.data?.totals as Partial<Totals> | null | undefined;
+    return {
+      checkpoint: (checkpoint.data as CheckpointRecord | null) ?? null,
+      lastSeq: last.data?.seq ?? 0,
+      totals: totals ? { ...EMPTY_TOTALS, ...totals } : null,
+    };
   }
 }

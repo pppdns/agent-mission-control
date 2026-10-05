@@ -1,11 +1,19 @@
 import type {
   AgentInfo,
   AgentMessage,
+  AgentStatus,
   Artifact,
   ArtifactSection,
+  BudgetExtension,
+  BudgetSnapshot,
+  ContextBudget,
+  ContextCategory,
+  Gap,
+  HitlOption,
   Limits,
   Provider,
   RouteName,
+  RuleName,
   Source,
   StepReport,
   TaskClass,
@@ -19,6 +27,20 @@ export interface ToolManifestEntry {
   description: string;
   inputSchema: unknown;
   budget: "search" | "fetch" | null;
+}
+
+export type CompactionStrategy = "summarize" | "prune" | "truncate";
+
+export interface EvaluationData {
+  round: number;
+  score: number;
+  rubric: { coverage: number; support: number; balance: number };
+  enoughEvidence: boolean;
+  gaps: Gap[];
+  unsupportedBlockIds: string[];
+  conflict: string | null;
+  decision: "synthesize" | "loop" | "ask_human";
+  reason: string;
 }
 
 export type EventBody =
@@ -38,10 +60,38 @@ export type EventBody =
     }
   | { type: "run.completed"; data: { totals: Totals; durationMs: number } }
   | { type: "run.failed"; data: { error: string; totals: Totals; durationMs: number } }
+  | {
+      type: "run.resumed";
+      data: {
+        checkpointId: string | null;
+        phase: string;
+        round: number;
+        reason: string;
+        artifact: Artifact | null;
+        agentStatus: Record<string, AgentStatus>;
+        sourceIds: string[];
+        messageIds: string[];
+      };
+    }
   | { type: "budget.exhausted"; data: { reason: string } }
-  | { type: "routing.decided"; data: { route: RouteName; provider: Provider; model: string; reason: string } }
+  | { type: "budget.updated"; data: { snapshot: BudgetSnapshot } }
+  | { type: "budget.extended"; data: { extension: BudgetExtension; reason: string } }
+  | {
+      type: "routing.decided";
+      data: {
+        callId: string | null;
+        rule?: RuleName;
+        route: RouteName;
+        provider: Provider;
+        model: string;
+        reason: string;
+        strategy?: "auto";
+        purpose?: string;
+      };
+    }
   | { type: "agent.spawned"; data: { agent: AgentInfo } }
-  | { type: "agent.started"; data: { goal: string } }
+  | { type: "agent.started"; data: { goal: string; round?: number } }
+  | { type: "agent.retasked"; data: { goal: string; angle: string | null; round: number } }
   | { type: "agent.note"; data: { text: string } }
   | { type: "agent.message_sent"; data: { message: AgentMessage } }
   | { type: "agent.retrying"; data: { reason: string; attempt: number; fallbackModel: string | null } }
@@ -55,6 +105,7 @@ export type EventBody =
         provider: Provider;
         model: string;
         route: RouteName;
+        rule?: RuleName;
         messageCount: number;
         promptChars: number;
         step: number | null;
@@ -123,7 +174,50 @@ export type EventBody =
         title: string | null;
         section: ArtifactSection | null;
       };
-    };
+    }
+  | {
+      type: "context.updated";
+      data: {
+        purpose: string;
+        tokens: Record<ContextCategory, number>;
+        total: number;
+        budget: ContextBudget;
+      };
+    }
+  | { type: "context.threshold_reached"; data: { total: number; threshold: number } }
+  | { type: "context.compacting"; data: { compactionId: string; strategy: CompactionStrategy; reason: string } }
+  | {
+      type: "context.compacted";
+      data: {
+        compactionId: string;
+        strategy: CompactionStrategy;
+        reason: string;
+        beforeTokens: number;
+        afterTokens: number;
+        removed: string[];
+        summarized: string[];
+        preserved: string[];
+        compactedState: string;
+        llmCallId: string | null;
+      };
+    }
+  | { type: "evaluation.completed"; data: EvaluationData }
+  | { type: "loop.started"; data: { round: number; reason: string; gaps: Gap[]; assignments: { agentId: string; goal: string }[] } }
+  | {
+      type: "hitl.requested";
+      data: {
+        requestId: string;
+        reason: "conflict" | "budget";
+        question: string;
+        context: string;
+        options: HitlOption[];
+        recommended: string;
+        timeoutMs: number;
+        deadlineTs: number;
+      };
+    }
+  | { type: "hitl.resolved"; data: { requestId: string; optionId: string; resolvedBy: "visitor" | "timeout"; waitedMs: number } }
+  | { type: "checkpoint.created"; data: { checkpointId: string; phase: string; round: number; label: string } };
 
 export type EventType = EventBody["type"];
 
@@ -141,7 +235,7 @@ export interface EventSink {
 const FLUSH_INTERVAL_MS = 250;
 
 export class EventBus {
-  private seq = 0;
+  private seq: number;
   private buffer: RunEvent[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
   private chain: Promise<void> = Promise.resolve();
@@ -151,7 +245,11 @@ export class EventBus {
   constructor(
     readonly runId: string,
     private readonly sink: EventSink,
-  ) {}
+    /** Last persisted seq; a resumed run continues the log after it. */
+    startSeq = 0,
+  ) {
+    this.seq = startSeq;
+  }
 
   emit<T extends EventBody>(body: T, agentId: string | null = null): RunEvent {
     const event = {

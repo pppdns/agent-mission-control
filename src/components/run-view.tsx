@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 import { AgentGraph } from "./agent-graph";
 import { ArtifactPanel } from "./artifact-panel";
 import { BudgetMeter } from "./budget-meter";
+import { HitlPanel } from "./hitl-panel";
 import { Inspector } from "./inspector";
+import { ReplayBar } from "./replay-bar";
 import type { Selection } from "./selection";
 import { formatCost, formatMs, formatTokens, Pill } from "./theme";
 import { TracePanel } from "./trace-panel";
-import { useRunStream } from "./use-run-stream";
+import { useRunPlayer } from "./use-run-player";
 
 function Metric({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
@@ -27,22 +29,27 @@ export function RunView({
   initialPrompt,
   initialStatus,
   initialError,
+  autoplay = false,
+  eventsUrl,
 }: {
   runId: string;
   initialPrompt: string;
   initialStatus: string;
   initialError: string | null;
+  autoplay?: boolean;
+  eventsUrl?: string;
 }) {
-  const { view, status, clockSkew } = useRunStream(runId);
+  const { view, status, clockSkew, player } = useRunPlayer(runId, { autoplay, eventsUrl });
   const [selection, setSelection] = useState<Selection>(null);
   const [now, setNow] = useState(() => Date.now());
-  const live = view.phase === "running" || view.phase === "waiting";
+  const following = player.mode === "live" && !player.ended;
+  const ticking = following && (view.phase === "running" || view.phase === "waiting" || view.phase === "paused");
 
   useEffect(() => {
-    if (!live) return;
+    if (!ticking) return;
     const t = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(t);
-  }, [live]);
+  }, [ticking]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -53,19 +60,29 @@ export function RunView({
   }, []);
 
   const elapsed =
-    view.startTs === null ? 0 : view.endTs !== null ? view.endTs - view.startTs : Math.max(0, now - clockSkew.current - view.startTs);
+    view.startTs === null
+      ? 0
+      : view.endTs !== null
+        ? view.endTs - view.startTs
+        : following
+          ? Math.max(0, now - clockSkew.current - view.startTs)
+          : view.lastTs - view.startTs;
   const prompt = view.prompt ?? initialPrompt;
   const queued = view.phase === "waiting";
 
   const phaseTone =
-    view.phase === "completed" ? "good" : view.phase === "failed" ? "bad" : view.phase === "declined" ? "warn" : "signal";
+    view.phase === "completed" ? "good" : view.phase === "failed" ? "bad" : view.phase === "declined" || view.phase === "paused" ? "warn" : "signal";
   const phaseLabel = queued
     ? initialStatus === "failed"
       ? "failed"
       : "queued"
     : view.phase === "running"
-      ? "live"
-      : view.phase;
+      ? following
+        ? "live"
+        : "replay"
+      : view.phase === "paused"
+        ? "awaiting decision"
+        : view.phase;
 
   return (
     <div className="flex h-dvh min-h-[640px] flex-col">
@@ -130,12 +147,14 @@ export function RunView({
                 <StreamDot status={status} phase={view.phase} />
               </div>
               {view.agentOrder.length === 0 ? (
-                <BootScreen phase={view.phase} status={initialStatus} error={view.error ?? initialError} />
+                <BootScreen phase={view.phase} status={initialStatus} error={view.error ?? initialError} replaying={!following && player.length > 0} />
               ) : (
                 <AgentGraph view={view} selection={selection} onSelect={setSelection} />
               )}
+              <HitlPanel view={view} runId={runId} interactive={following} clockSkew={clockSkew.current} />
             </div>
             <BudgetMeter view={view} />
+            <ReplayBar player={player} />
           </div>
 
           <div className="h-[36rem] min-h-0 lg:h-auto">
@@ -143,7 +162,7 @@ export function RunView({
           </div>
 
           <div className="h-[20rem] min-h-0 lg:col-span-2 lg:h-auto">
-            <TracePanel view={view} onSelect={setSelection} />
+            <TracePanel view={view} onSelect={setSelection} onJump={player.seekToSeq} />
           </div>
         </div>
 
@@ -165,8 +184,8 @@ function StreamDot({ status, phase }: { status: string; phase: string }) {
   );
 }
 
-function BootScreen({ phase, status, error }: { phase: string; status: string; error: string | null }) {
-  const failed = status === "failed" || phase === "failed";
+function BootScreen({ phase, status, error, replaying }: { phase: string; status: string; error: string | null; replaying: boolean }) {
+  const failed = !replaying && (status === "failed" || phase === "failed");
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
       <div className="relative h-20 w-20">
@@ -175,7 +194,9 @@ function BootScreen({ phase, status, error }: { phase: string; status: string; e
         <div className="absolute inset-0 flex items-center justify-center text-2xl text-signal">◎</div>
       </div>
       <div>
-        <div className="label !text-ink-dim">{failed ? "Run failed to start" : phase === "waiting" ? "Waiting for a worker" : "Orchestrator is planning"}</div>
+        <div className="label !text-ink-dim">
+          {replaying ? "Replay: the run is starting" : failed ? "Run failed to start" : phase === "waiting" ? "Waiting for a worker" : "Orchestrator is planning"}
+        </div>
         <p className="mt-1 max-w-xs text-[12.5px] text-ink-faint">
           {failed
             ? (error ?? "This run could not be started.")

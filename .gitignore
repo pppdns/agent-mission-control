@@ -44,3 +44,7 @@ next-env.d.ts
 .trigger
 # supabase cli
 supabase/.temp
+
+# playwright
+/test-results/
+/playwright-report/

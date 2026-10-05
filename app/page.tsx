@@ -103,7 +103,7 @@ export default async function Home() {
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">
             {featured.map((run, i) => (
               <li key={run.id}>
-                <Link href={`/run/${run.id}`} className="hud group flex h-full flex-col gap-2 p-4 transition hover:border-signal/50">
+                <Link href={`/run/${run.id}?play=1`} className="hud group flex h-full flex-col gap-2 p-4 transition hover:border-signal/50">
                   <div className="flex items-center gap-2">
                     {i === 0 && <span className="label !text-signal">Watch an example run</span>}
                     {run.task_class && <span className="label ml-auto">{run.task_class}</span>}

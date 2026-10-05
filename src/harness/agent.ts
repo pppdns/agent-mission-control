@@ -1,81 +1,101 @@
 import type { ModelMessage } from "ai";
 import type { ZodType } from "zod";
+import { CONTEXT_BUDGETS } from "./config";
 import type { RunContext } from "./context";
+import { loopMessages, type LoopContext, type Pruner } from "./context-window";
 import { clip } from "./evidence";
-import type { AgentInfo } from "./types";
+import { ROLE_KIND } from "./router";
+import type { AgentInfo, ContextBudget } from "./types";
 
 export const FINISH_TOOL = "submit_report";
 
 export interface LoopConfig<R> {
   system: string;
+  /** Mission, goal, teammates and inbox: the agent's working state. */
   user: string;
+  /** Material handed to the agent (draft brief, source excerpts) that may be pruned under context pressure. */
+  retrieved?: string;
+  prune?: Pruner;
   reportSchema: ZodType<R>;
   reportDescription: string;
   maxSteps: number;
+  budget?: ContextBudget;
 }
 
 /**
  * The agent loop, owned by the harness (not delegated to an SDK):
  * call the model, execute any requested tools through the registry, feed results back, repeat
  * until the agent submits its structured report or a budget forces it to.
+ * The working context is measured before every call and compacted when it crosses the threshold.
  */
 export async function runAgentLoop<R>(ctx: RunContext, agent: AgentInfo, cfg: LoopConfig<R>): Promise<R> {
-  const messages: ModelMessage[] = [{ role: "user", content: cfg.user }];
+  const budget = cfg.budget ?? CONTEXT_BUDGETS.worker;
+  const c: LoopContext = { system: cfg.system, working: cfg.user, retrieved: cfg.retrieved ?? "", notes: null, turns: [] };
   const externalTools = agent.tools;
+  const kind = ROLE_KIND[agent.role];
 
   for (let step = 1; step <= cfg.maxSteps; step++) {
+    const available = ctx.tools.usable(externalTools, agent.id);
     const mustFinish =
       step === cfg.maxSteps ||
-      externalTools.length === 0 ||
+      available.length === 0 ||
       ctx.budget.exhausted ||
       ctx.budget.workerCallsLeft() <= 0;
 
     const tools = {
-      ...(mustFinish ? {} : ctx.tools.specs(externalTools)),
+      ...(mustFinish ? {} : ctx.tools.specs(available)),
       [FINISH_TOOL]: { description: cfg.reportDescription, inputSchema: cfg.reportSchema },
     };
 
     if (mustFinish && step > 1) {
-      messages.push({
+      c.turns.push({
         role: "user",
         content: `Budget or step limit reached${ctx.budget.exhaustedBecause ? ` (${ctx.budget.exhaustedBecause})` : ""}. Submit your report now using what you have.`,
       });
     }
 
+    const purpose = mustFinish ? "final report" : `research step ${step}`;
+    let estimated = ctx.contexts.measureLoop(agent, purpose, c, budget);
+    if (estimated > budget.compactAtTokens && (await ctx.compactor.compactLoop(agent, c, budget, cfg.prune))) {
+      estimated = ctx.contexts.measureLoop(agent, purpose, c, budget);
+    }
+
     const result = await ctx.llm.call({
       agentId: agent.id,
-      purpose: mustFinish ? "final report" : `research step ${step}`,
-      route: agent.route,
+      kind,
+      purpose,
+      estimatedInputTokens: estimated,
       step,
-      system: cfg.system,
-      messages,
+      system: c.system,
+      messages: loopMessages(c),
       tools,
       toolChoice: mustFinish ? { type: "tool", toolName: FINISH_TOOL } : "required",
     });
+    ctx.contexts.calibrate(agent.id, estimated, result.inputTokens);
 
     if (result.text.trim()) {
       ctx.bus.emit({ type: "agent.note", data: { text: clip(result.text, 600) } }, agent.id);
     }
-    messages.push(...result.responseMessages);
+    c.turns.push(...result.responseMessages);
     // The SDK answers tool calls whose input it rejected itself; a second result for the same id is an API error.
     const answered = answeredToolCalls(result.responseMessages);
 
-    const finish = result.toolCalls.find((c) => c.name === FINISH_TOOL);
+    const finish = result.toolCalls.find((call) => call.name === FINISH_TOOL);
     if (finish) {
       const parsed = cfg.reportSchema.safeParse(finish.input);
       if (parsed.success) return parsed.data;
-      const unanswered = result.toolCalls.filter((c) => !answered.has(c.id));
+      const unanswered = result.toolCalls.filter((call) => !answered.has(call.id));
       if (unanswered.length > 0) {
-        messages.push({
+        c.turns.push({
           role: "tool",
-          content: unanswered.map((c) => ({
+          content: unanswered.map((call) => ({
             type: "tool-result" as const,
-            toolCallId: c.id,
-            toolName: c.name,
+            toolCallId: call.id,
+            toolName: call.name,
             output: {
               type: "error-text" as const,
               value:
-                c.id === finish.id
+                call.id === finish.id
                   ? `Report did not match the schema: ${parsed.error.message.slice(0, 600)}`
                   : "Not executed: submit a valid report first.",
             },
@@ -89,9 +109,9 @@ export async function runAgentLoop<R>(ctx: RunContext, agent: AgentInfo, cfg: Lo
       continue;
     }
 
-    const pending = result.toolCalls.filter((c) => !answered.has(c.id));
+    const pending = result.toolCalls.filter((call) => !answered.has(call.id));
     if (result.toolCalls.length === 0) {
-      messages.push({ role: "user", content: `Use a tool: either gather evidence or call ${FINISH_TOOL}.` });
+      c.turns.push({ role: "user", content: `Use a tool: either gather evidence or call ${FINISH_TOOL}.` });
       continue;
     }
 
@@ -111,7 +131,7 @@ export async function runAgentLoop<R>(ctx: RunContext, agent: AgentInfo, cfg: Lo
       })),
     );
 
-    messages.push({
+    c.turns.push({
       role: "tool",
       content: outcomes.map(({ call, outcome }) => ({
         type: "tool-result" as const,

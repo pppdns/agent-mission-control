@@ -79,6 +79,14 @@ export class ToolRegistry {
     }));
   }
 
+  /** The subset of `names` this agent could still use; a tool whose budget is spent is not offered at all. */
+  usable(names: string[], agentId: string): string[] {
+    return names.filter((n) => {
+      const t = this.tools.get(n);
+      return !!t && (!t.budget || this.budget.canUse(t.budget, agentId));
+    });
+  }
+
   specs(names: string[]): Record<string, ToolSpec> {
     return Object.fromEntries(
       names
