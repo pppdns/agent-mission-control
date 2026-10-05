@@ -6,7 +6,9 @@
     "dev": "next dev --port 3012",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "trigger:dev": "npx trigger.dev@4.7.2 dev",
+    "trigger:deploy": "npx trigger.dev@4.7.2 deploy"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.71",
