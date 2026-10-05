@@ -38,10 +38,20 @@ Human decisions are auto-answered with the recommended option after 1.5 s. The e
 
 ```bash
 pnpm test        # vitest: reducer and replay on recorded runs, checkpoint round trip, compaction, decision rule
-pnpm test:e2e    # Playwright: landing page, replay controls, human-decision card (run pages render recorded fixtures)
+pnpm test:e2e    # Playwright: landing reel and cards (desktop and phone), replay controls, human-decision card
 ```
 
-`tests/fixtures/*.json` are event logs from real local runs. With `E2E_FIXTURES=1`, `/run/fixture-*` renders without a database row and the tests serve the SSE stream from the fixture.
+`tests/fixtures/*.json` are event logs from real local runs. With `E2E_FIXTURES=1`, `/run/fixture-*` renders without a database row, the tests serve the SSE stream from the fixture, and the landing page features the fixtures.
+
+## Landing page showcase
+
+The hero reel plays a 10-second compressed preview of each featured run in turn, and the cards below show each run's team side by side. Both read `runs.preview`, a small digest (`src/harness/preview.ts`) built from the event log the first time a featured run is loaded and cached on the row. Curate the list with:
+
+```bash
+pnpm feature                    # list recent completed runs and their featured position
+pnpm feature <id> <id> ...      # feature exactly these runs, in this order
+pnpm feature --unfeature <id>   # remove a run from the landing page
+```
 
 ## Phase 2 at a glance
 
