@@ -77,7 +77,7 @@ export class RunContext {
       parentId: partial.parentId,
       route: decision.route,
       rule: decision.rule,
-      routeReason: `${decision.reason} ${ROUTES[decision.route].reason}`,
+      routeReason: decision.reason === ROUTES[decision.route].reason ? decision.reason : `${decision.reason} ${ROUTES[decision.route].reason}`,
       provider: decision.provider,
       model: decision.model,
       tools: TOOL_PERMISSIONS[partial.role],
