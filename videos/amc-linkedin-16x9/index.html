@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+      @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+      @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+      @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #06080b; }
+      body { font-family: "Geist", sans-serif; color: #dce4ec; -webkit-font-smoothing: antialiased; }
+
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #06080b; }
+      #root > div[data-composition-src] { position: absolute; inset: 0; }
+
+      /* Ground: the app's grid and glows, at video intensity. */
+      #bg { position: absolute; inset: 0; overflow: hidden; }
+      #bg-grid {
+        position: absolute; inset: -64px;
+        background-image:
+          linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+        background-size: 32px 32px;
+      }
+      .glow { position: absolute; border-radius: 50%; will-change: transform, opacity; }
+      #glow-cyan { width: 1300px; height: 900px; right: -520px; top: -420px; background: radial-gradient(closest-side, rgb(79 209 230 / 0.16), transparent); }
+      #glow-amber { width: 1100px; height: 800px; left: -520px; bottom: -380px; background: radial-gradient(closest-side, rgb(255 181 71 / 0.12), transparent); }
+
+      /* Shared scene vocabulary. Scenes mount into this document, so these classes apply inside them. */
+      .band { position: absolute; left: 56px; right: 56px; top: 0; height: 214px; }
+      .chap { position: absolute; left: 0; top: 24px; display: flex; align-items: center; gap: 18px; height: 34px; }
+      .chap-n { font-family: "Geist Mono", monospace; font-weight: 500; font-size: 26px; color: #ffb547; font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+      .chap-rule { width: 40px; height: 2px; background: #2b3a49; }
+      .chap-t { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 28px; letter-spacing: 0.16em; text-transform: uppercase; color: #8896a6; }
+      .hl { position: absolute; left: 0; right: 0; top: 60px; white-space: nowrap; font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 104px; line-height: 0.96; letter-spacing: 0.004em; text-transform: uppercase; color: #dce4ec; }
+      .hl .ln { display: inline-block; vertical-align: top; overflow: hidden; padding-bottom: 6px; }
+      .hl .w { display: inline-block; will-change: transform; }
+      .sub { position: absolute; left: 0; right: 0; top: 168px; font-size: 36px; line-height: 1.2; color: #8896a6; font-weight: 400; white-space: nowrap; }
+      .sub b { color: #dce4ec; font-weight: 500; }
+
+      .win { position: absolute; left: 24px; top: 222px; width: 1872px; height: 818px; overflow: hidden; border-radius: 6px; background: #0b0f14; }
+      .cam { position: absolute; left: 0; top: 0; width: 1872px; height: 1053px; transform-origin: 0 0; will-change: transform; }
+      .cam > video { position: absolute; left: 0; top: 0; width: 1872px; height: 1053px; object-fit: fill; }
+
+      .chip { display: inline-flex; align-items: center; gap: 10px; height: 48px; padding: 0 18px; border-radius: 4px; border: 2px solid; font-family: "Geist Mono", monospace; font-size: 26px; font-weight: 500; background: rgb(6 8 11 / 0.88); white-space: nowrap; }
+      .chip i { width: 10px; height: 10px; border-radius: 50%; background: currentColor; display: block; }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-ujef" id="root" data-composition-id="main" data-start="0" data-duration="77" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-2xc0" id="bg">
+        <div data-hf-id="hf-ri4e" id="bg-grid" data-layout-allow-overflow=""></div>
+        <div data-hf-id="hf-apnt" id="glow-cyan" class="glow" data-layout-allow-overflow=""></div>
+        <div data-hf-id="hf-w3q9" id="glow-amber" class="glow" data-layout-allow-overflow=""></div>
+      </div>
+
+      <div data-hf-id="hf-0kc8" id="el-s01" data-composition-id="s01-hook" data-composition-src="compositions/s01-hook.html" data-start="0" data-duration="4.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-aktq" id="el-s02" data-composition-id="s02-plan" data-composition-src="compositions/s02-plan.html" data-start="4.5" data-duration="6.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-pu9m" id="el-s03" data-composition-id="s03-teams" data-composition-src="compositions/s03-teams.html" data-start="11" data-duration="7" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-wi7k" id="el-s04" data-composition-id="s04-tools" data-composition-src="compositions/s04-tools.html" data-start="18" data-duration="6.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-lq15" id="el-s05" data-composition-id="s05-critique" data-composition-src="compositions/s05-critique.html" data-start="24.5" data-duration="7" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-jcr9" id="el-s06" data-composition-id="s06-evaluate" data-composition-src="compositions/s06-evaluate.html" data-start="31.5" data-duration="6" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-27ci" id="el-s07" data-composition-id="s07-human" data-composition-src="compositions/s07-human.html" data-start="37.5" data-duration="6" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-p4f7" id="el-s08" data-composition-id="s08-context" data-composition-src="compositions/s08-context.html" data-start="43.5" data-duration="7" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-c7x2" id="el-s09" data-composition-id="s09-result" data-composition-src="compositions/s09-result.html" data-start="50.5" data-duration="6.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-9dso" id="el-s10" data-composition-id="s10-engine" data-composition-src="compositions/s10-engine.html" data-start="57" data-duration="8.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-ly17" id="el-s11" data-composition-id="s11-replay" data-composition-src="compositions/s11-replay.html" data-start="65.5" data-duration="5" data-track-index="1" data-width="1920" data-height="1080"></div>
+      <div data-hf-id="hf-fe7y" id="el-s12" data-composition-id="s12-cta" data-composition-src="compositions/s12-cta.html" data-start="70.5" data-duration="6.5" data-track-index="1" data-width="1920" data-height="1080"></div>
+
+      <div data-hf-id="hf-mihb" id="el-s00" data-composition-id="s00-chrome" data-composition-src="compositions/s00-chrome.html" data-start="4.5" data-duration="66" data-track-index="5" data-width="1920" data-height="1080"></div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      tl.fromTo("#glow-cyan", { scale: 1, opacity: 0.85 }, { scale: 1.12, opacity: 1, duration: 9.625, ease: "sine.inOut", yoyo: true, repeat: 7 }, 0);
+      tl.fromTo("#glow-amber", { scale: 1.1, opacity: 1 }, { scale: 0.96, opacity: 0.8, duration: 11, ease: "sine.inOut", yoyo: true, repeat: 6 }, 0);
+      tl.fromTo("#bg-grid", { x: 0, y: 0 }, { x: 32, y: -32, duration: 77, ease: "none" }, 0);
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

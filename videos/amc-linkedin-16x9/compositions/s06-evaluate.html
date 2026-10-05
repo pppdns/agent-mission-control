@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template>
+      <div data-hf-id="hf-wf2p" id="root" data-composition-id="s06-evaluate" data-width="1920" data-height="1080" data-duration="6">
+        <style>
+          @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+          @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+          @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+          @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+          #root { position: absolute; inset: 0; }
+          #s06-stamp { position: absolute; right: 28px; bottom: 28px; transform-origin: 100% 100%; }
+          #s06-stamp .chip { height: 60px; font-size: 30px; padding: 0 22px; border-width: 3px; }
+        </style>
+
+        <div data-hf-id="hf-zn68" class="band" id="s06-band">
+          <div data-hf-id="hf-j6hi" class="chap"><span data-hf-id="hf-u0ck" class="chap-n">06 / 12</span><span data-hf-id="hf-hs16" class="chap-rule"></span><span data-hf-id="hf-hgfv" class="chap-t">Self-evaluation</span></div>
+          <h1 data-hf-id="hf-sqeq" class="hl">
+            <span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-ehbp" class="w">It</span> <span data-hf-id="hf-m7kd" class="w" style="color:#c792ea">grades</span> <span data-hf-id="hf-1jo2" class="w">its</span></span>
+            <span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-8h94" class="w">own</span> <span data-hf-id="hf-1quj" class="w">draft</span></span>
+          </h1>
+          <p data-hf-id="hf-1dyv" class="sub"><b data-hf-id="hf-zvz0">4.7/10</b> with open gaps, so it starts a second round.</p>
+        </div>
+
+        <div data-hf-id="hf-v0ka" class="win">
+          <div data-hf-id="hf-924a" class="cam" id="s06-cam"><video data-hf-id="hf-8n7o" id="s06-v" class="clip" src="clips/main-eval.mp4" data-start="0" data-duration="6" data-media-start="0" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-mmxs" id="s06-stamp"><span data-hf-id="hf-404k" class="chip" style="color:#c792ea"><i data-hf-id="hf-wt6k"></i>LOOP → ROUND 2</span></div>
+        </div>
+
+        <script>
+          (function () {
+            const K = 1872 / 1600;
+            // Puts UI point (fx, fy) at the window centre, clamped so no edge of the footage shows.
+            const cam = (fx, fy, s) => {
+              const hw = 936 / (K * s), hh = 409 / (K * s);
+              if (hw < 800) fx = Math.min(Math.max(fx, hw), 1600 - hw);
+              if (hh < 450) fy = Math.min(Math.max(fy, hh), 900 - hh);
+              return { x: 936 - fx * K * s, y: 409 - fy * K * s, scale: s };
+            };
+            const tl = gsap.timeline({ paused: true });
+
+            tl.fromTo("#s06-band .chap", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, 0);
+            tl.fromTo("#s06-band .w", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "power4.out", stagger: 0.04 }, 0.05);
+            tl.fromTo("#s06-band .sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.4);
+
+            tl.fromTo("#s06-cam", cam(560, 190, 2.0), { ...cam(580, 175, 2.15), duration: 0.9, ease: "power1.out" }, 0);
+            tl.to("#s06-cam", { ...cam(1390, 250, 2.3), duration: 0.75, ease: "power3.inOut" }, 0.9);
+            tl.to("#s06-cam", { ...cam(1390, 400, 2.3), duration: 1.6, ease: "sine.inOut" }, 1.7);
+            tl.to("#s06-cam", { ...cam(1390, 760, 2.3), duration: 1.6, ease: "power2.inOut" }, 3.4);
+
+            tl.fromTo("#s06-stamp", { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)" }, 3.7);
+
+            tl.to("#s06-band .w", { yPercent: -110, duration: 0.26, ease: "power3.in", stagger: 0.015 }, 5.7);
+            tl.to("#s06-band .sub", { opacity: 0, duration: 0.2, ease: "power1.in" }, 5.75);
+
+            window.__timelines["s06-evaluate"] = tl;
+          })();
+        </script>
+      </div>
+    </template>
+  </body>
+</html>

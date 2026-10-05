@@ -1,0 +1,12 @@
+# Regenerable media and scratch output. Re-create with capture/record.mts and `npx hyperframes render`.
+clips/
+renders/
+snapshots/
+capture/frames/
+capture/runs/
+capture/tmp/
+capture/stats.json
+.hyperframes/
+.media/
+.thumbnails/
+capture/*.log

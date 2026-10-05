@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template>
+      <div data-hf-id="hf-cs6u" id="root" data-composition-id="s00-chrome" data-width="1920" data-height="1080" data-duration="66">
+        <style>
+          @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+          @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+          @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+          @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+          #root { position: absolute; inset: 0; pointer-events: none; }
+          #s00-frame { position: absolute; left: 24px; top: 222px; width: 1872px; height: 818px; border: 2px solid #1a232d; border-radius: 6px; }
+          .s00-brk { position: absolute; width: 22px; height: 22px; border-color: #5a6878; border-style: solid; border-width: 0; }
+          #s00-brk-tl { left: -2px; top: -2px; border-left-width: 3px; border-top-width: 3px; border-top-left-radius: 6px; }
+          #s00-brk-tr { right: -2px; top: -2px; border-right-width: 3px; border-top-width: 3px; border-top-right-radius: 6px; }
+          #s00-brk-bl { left: -2px; bottom: -2px; border-left-width: 3px; border-bottom-width: 3px; border-bottom-left-radius: 6px; }
+          #s00-brk-br { right: -2px; bottom: -2px; border-right-width: 3px; border-bottom-width: 3px; border-bottom-right-radius: 6px; }
+          #s00-scan { position: absolute; left: 0; right: 0; top: 0; height: 3px; background: #ffb547; box-shadow: 0 0 18px 2px rgb(255 181 71 / 0.55); opacity: 0; }
+          #s00-brand { position: absolute; right: 56px; top: 24px; height: 34px; display: flex; align-items: center; gap: 12px; font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 28px; letter-spacing: 0.16em; color: #8896a6; }
+          #s00-mark { width: 26px; height: 26px; border-radius: 50%; border: 3px solid #ffb547; display: grid; place-items: center; }
+          #s00-mark::after { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #ffb547; }
+          #s00-spine { position: absolute; left: 24px; top: 1060px; width: 1872px; height: 6px; border-radius: 3px; background: #161e27; overflow: hidden; }
+          #s00-fill { position: absolute; inset: 0; background: #ffb547; transform-origin: 0 50%; }
+          .s00-tick { position: absolute; top: 0; width: 4px; height: 6px; }
+          #s00-head { position: absolute; left: 24px; top: 1055px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: #ffb547; box-shadow: 0 0 0 4px rgb(255 181 71 / 0.25); }
+        </style>
+
+        <div data-hf-id="hf-gn4g" id="s00-frame">
+          <div data-hf-id="hf-90jq" id="s00-scan"></div>
+          <div data-hf-id="hf-3fj9" class="s00-brk" id="s00-brk-tl"></div>
+          <div data-hf-id="hf-fukb" class="s00-brk" id="s00-brk-tr"></div>
+          <div data-hf-id="hf-wfsz" class="s00-brk" id="s00-brk-bl"></div>
+          <div data-hf-id="hf-x7kt" class="s00-brk" id="s00-brk-br"></div>
+        </div>
+        <div data-hf-id="hf-v4ha" id="s00-brand"><div data-hf-id="hf-hya2" id="s00-mark"></div>AGENT MISSION CONTROL</div>
+        <div data-hf-id="hf-pzv6" id="s00-spine"><div data-hf-id="hf-ywhy" id="s00-fill"></div></div>
+        <div data-hf-id="hf-08c3" id="s00-head"></div>
+
+        <script>
+          (function () {
+            const TOTAL = 77, OFFSET = 4.5, LEN = 66, W = 1872;
+            const CHAPTERS = [
+              [4.5, "#e8f1ff"], [11, "#4fd1e6"], [18, "#4fd1e6"], [24.5, "#ff6b5a"], [31.5, "#c792ea"],
+              [37.5, "#ffb547"], [43.5, "#9be564"], [50.5, "#ffb547"], [57, "#e8f1ff"], [65.5, "#ffb547"],
+            ];
+            const spine = document.getElementById("s00-spine");
+            CHAPTERS.forEach(([t, color]) => {
+              const tick = document.createElement("div");
+              tick.className = "s00-tick";
+              tick.style.left = `${(t / TOTAL) * W}px`;
+              tick.style.background = color;
+              spine.appendChild(tick);
+            });
+
+            const tl = gsap.timeline({ paused: true });
+            const p0 = OFFSET / TOTAL, p1 = (OFFSET + LEN) / TOTAL;
+            tl.fromTo("#s00-fill", { scaleX: p0 }, { scaleX: p1, duration: LEN, ease: "none" }, 0);
+            tl.fromTo("#s00-head", { x: p0 * W }, { x: p1 * W, duration: LEN, ease: "none" }, 0);
+
+            tl.fromTo("#s00-frame", { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power3.out" }, 0);
+            tl.fromTo("#s00-brand", { opacity: 0, x: 24 }, { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }, 0.1);
+            CHAPTERS.forEach(([t]) => {
+              const at = t - OFFSET;
+              tl.fromTo("#s00-scan", { y: 0, opacity: 1 }, { y: 812, opacity: 0.2, duration: 0.42, ease: "power2.in", immediateRender: false }, at);
+              tl.set("#s00-scan", { opacity: 0 }, at + 0.42);
+            });
+
+            window.__timelines["s00-chrome"] = tl;
+          })();
+        </script>
+      </div>
+    </template>
+  </body>
+</html>

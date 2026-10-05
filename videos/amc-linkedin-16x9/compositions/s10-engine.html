@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template>
+      <div data-hf-id="hf-0q8i" id="root" data-composition-id="s10-engine" data-width="1920" data-height="1080" data-duration="8.5">
+        <style>
+          @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+          @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+          @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+          @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+          #root { position: absolute; inset: 0; }
+          #s10-dia { position: absolute; inset: 0; background-image: radial-gradient(rgb(255 255 255 / 0.05) 1.5px, transparent 1.5px); background-size: 24px 24px; }
+          #s10-label { position: absolute; left: 40px; top: 14px; font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 24px; letter-spacing: 0.18em; color: #5a6878; }
+          .s10-box { position: absolute; border: 2px solid #2b3a49; border-radius: 6px; background: #0b0f14; z-index: 3; }
+          .s10-t { font-family: "Barlow Condensed", sans-serif; font-weight: 700; font-size: 34px; letter-spacing: 0.02em; text-transform: uppercase; color: #dce4ec; line-height: 1; }
+          .s10-s { font-family: "Geist Mono", monospace; font-size: 22px; color: #8896a6; margin-top: 10px; line-height: 1.2; }
+          #s10-ui { left: 1580px; top: 90px; width: 260px; height: 130px; padding: 24px 22px; border-color: #5a6878; }
+          #s10-ui .s10-s { font-size: 20px; }
+          #s10-log { left: 1060px; top: 40px; width: 440px; height: 500px; padding: 22px 22px; }
+          #s10-seq { position: absolute; right: 22px; top: 22px; font-family: "Geist Mono", monospace; font-size: 24px; font-weight: 500; color: #ffb547; font-variant-numeric: tabular-nums; }
+          #s10-rows { position: absolute; left: 22px; right: 22px; top: 112px; }
+          .s10-row { height: 31px; display: flex; align-items: center; gap: 12px; font-family: "Geist Mono", monospace; font-size: 21px; font-weight: 500; white-space: nowrap; }
+          .s10-row i { width: 10px; height: 10px; border-radius: 50%; background: currentColor; display: block; flex: none; }
+          #s10-harness { left: 40px; top: 50px; width: 780px; height: 210px; padding: 24px 28px; border-color: #ffb547; background: linear-gradient(180deg, rgb(255 181 71 / 0.09), rgb(255 181 71 / 0.02)), #0b0f14; box-shadow: 0 0 40px rgb(255 181 71 / 0.12); }
+          #s10-harness .s10-t { font-size: 62px; color: #ffb547; }
+          #s10-harness .s10-s { font-family: "Geist", sans-serif; font-size: 28px; margin-top: 8px; color: #dce4ec; }
+          #s10-badge { position: absolute; right: 24px; top: 24px; font-family: "Geist Mono", monospace; font-size: 22px; color: #8896a6; border: 2px solid #2b3a49; border-radius: 4px; padding: 4px 12px; }
+          #s10-tags { position: absolute; left: 28px; bottom: 22px; display: flex; gap: 10px; }
+          .s10-tag { font-family: "Geist Mono", monospace; font-size: 22px; color: #ffb547; background: rgb(255 181 71 / 0.1); border-radius: 3px; padding: 3px 10px; }
+          .s10-dep { top: 350px; width: 186px; height: 100px; padding: 18px 16px; }
+          .s10-dep .s10-t { font-size: 32px; }
+          .s10-dep .s10-s { font-size: 19px; margin-top: 8px; }
+          .s10-wire { position: absolute; background: #2b3a49; z-index: 1; }
+          .s10-wv { width: 2px; height: 90px; top: 260px; transform-origin: 50% 0%; }
+          .s10-wh { height: 2px; transform-origin: 0% 50%; }
+          .s10-wlabel { position: absolute; font-family: "Geist Mono", monospace; font-size: 22px; color: #5a6878; z-index: 1; }
+          .s10-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; z-index: 2; opacity: 0; }
+          .s10-pill { position: absolute; left: 470px; top: 137px; font-family: "Geist Mono", monospace; font-size: 22px; font-weight: 500; padding: 4px 12px; border-radius: 3px; border: 2px solid; background: #06080b; white-space: nowrap; z-index: 2; opacity: 0; }
+          #s10-stats { position: absolute; left: 40px; top: 590px; width: 1792px; height: 190px; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 2px solid #1a232d; }
+          .s10-stat { display: flex; flex-direction: column; justify-content: center; padding-left: 4px; gap: 8px; }
+          .s10-n { font-family: "Geist Mono", monospace; font-size: 84px; font-weight: 500; color: #dce4ec; font-variant-numeric: tabular-nums; line-height: 1; }
+          .s10-l { font-family: "Barlow Condensed", sans-serif; font-size: 28px; font-weight: 600; letter-spacing: 0.14em; color: #8896a6; text-transform: uppercase; }
+        </style>
+
+        <div data-hf-id="hf-zol7" class="band" id="s10-band">
+          <div data-hf-id="hf-j6hi" class="chap"><span data-hf-id="hf-pv3t" class="chap-n">10 / 12</span><span data-hf-id="hf-hs16" class="chap-rule"></span><span data-hf-id="hf-jaqt" class="chap-t">Under the hood</span></div>
+          <h1 data-hf-id="hf-sqeq" class="hl">
+            <span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-1neg" class="w">Own</span> <span data-hf-id="hf-8i11" class="w" style="color:#ffb547">agent</span> <span data-hf-id="hf-lwdw" class="w" style="color:#ffb547">loop.</span></span>
+            <span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-zpg9" class="w">Not</span> <span data-hf-id="hf-vfsf" class="w">an</span> <span data-hf-id="hf-vmek" class="w">SDK</span> <span data-hf-id="hf-dml3" class="w">wrapper.</span></span>
+          </h1>
+          <p data-hf-id="hf-njeh" class="sub">Every step is an event. Live view and replay share <b data-hf-id="hf-f7vd">one log</b>.</p>
+        </div>
+
+        <div class="win">
+          <div id="s10-dia">
+            <div id="s10-label">ARCHITECTURE</div>
+
+            <div class="s10-wire s10-wh" id="s10-w-ev" style="left:820px; top:154px; width:240px"></div>
+            <div class="s10-wlabel" id="s10-wl-ev" style="left:900px; top:112px">append</div>
+            <div class="s10-wire s10-wh" id="s10-w-sse" style="left:1500px; top:154px; width:80px"></div>
+            <div class="s10-wlabel" id="s10-wl-sse" style="left:1517px; top:112px">SSE</div>
+            <div class="s10-wire s10-wv s10-wb" style="left:133px; background:#4ee0b5"></div>
+            <div class="s10-wire s10-wv s10-wb" style="left:331px; background:#f0986f"></div>
+            <div class="s10-wire s10-wv s10-wb" style="left:529px; background:#4fd1e6"></div>
+            <div class="s10-wire s10-wv s10-wb" style="left:727px; background:#4fd1e6"></div>
+            <div class="s10-dot s10-wd" style="left:133px; top:260px; background:#4ee0b5"></div>
+            <div class="s10-dot s10-wd" style="left:331px; top:260px; background:#f0986f"></div>
+            <div class="s10-dot s10-wd" style="left:529px; top:260px; background:#4fd1e6"></div>
+            <div class="s10-dot s10-wd" style="left:727px; top:260px; background:#4fd1e6"></div>
+            <div class="s10-dot" id="s10-sse-dot" style="left:1500px; top:155px; background:#ffb547"></div>
+
+            <div id="s10-pills" data-layout-allow-overlap=""></div>
+
+            <div class="s10-box" id="s10-ui"><div class="s10-t">Next.js 16</div><div class="s10-s">live view · replay</div></div>
+            <div class="s10-box" id="s10-log">
+              <div class="s10-t">Postgres event log</div>
+              <div class="s10-s">append-only · sequenced</div>
+              <div id="s10-seq">#0000</div>
+              <div id="s10-rows"></div>
+            </div>
+            <div class="s10-box" id="s10-harness">
+              <div class="s10-t">Agent harness</div>
+              <div class="s10-s">TypeScript · written from scratch</div>
+              <div id="s10-badge">on Trigger.dev</div>
+              <div id="s10-tags"><span class="s10-tag">routing</span><span class="s10-tag">compaction</span><span class="s10-tag">budgets</span><span class="s10-tag">HITL</span><span class="s10-tag">checkpoints</span></div>
+            </div>
+            <div class="s10-box s10-dep" style="left:40px; border-color:#4ee0b5"><div class="s10-t" style="color:#4ee0b5">OpenAI</div><div class="s10-s">gpt-6-luna</div></div>
+            <div class="s10-box s10-dep" style="left:238px; border-color:#f0986f"><div class="s10-t" style="color:#f0986f">Anthropic</div><div class="s10-s">claude-sonnet</div></div>
+            <div class="s10-box s10-dep" style="left:436px; border-color:#4fd1e6"><div class="s10-t" style="color:#4fd1e6">Tavily</div><div class="s10-s">MCP · search</div></div>
+            <div class="s10-box s10-dep" style="left:634px; border-color:#4fd1e6"><div class="s10-t" style="color:#4fd1e6">Firecrawl</div><div class="s10-s">MCP · scrape</div></div>
+
+            <div id="s10-stats">
+              <div class="s10-stat"><span class="s10-n" data-to="10">0</span><span class="s10-l">Recorded runs</span></div>
+              <div class="s10-stat"><span class="s10-n" data-to="4718" data-sep="1">0</span><span class="s10-l">Events</span></div>
+              <div class="s10-stat"><span class="s10-n" data-to="32">0</span><span class="s10-l">Event types</span></div>
+              <div class="s10-stat"><span class="s10-n" data-to="292">0</span><span class="s10-l">Routing calls</span></div>
+            </div>
+          </div>
+        </div>
+
+        <script>
+          (function () {
+            const tl = gsap.timeline({ paused: true });
+
+            tl.fromTo("#s10-band .chap", { opacity: 0, x: -16 }, { opacity: 1, x: 0, duration: 0.35, ease: "power2.out" }, 0);
+            tl.fromTo("#s10-band .w", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "power4.out", stagger: 0.04 }, 0.05);
+            tl.fromTo("#s10-band .sub", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.4);
+
+            tl.fromTo("#s10-label", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 0.1);
+            tl.fromTo("#s10-harness", { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 0.2);
+            tl.fromTo(".s10-wb", { scaleY: 0 }, { scaleY: 1, duration: 0.3, ease: "power2.out", stagger: 0.07 }, 0.55);
+            tl.fromTo(".s10-dep", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out", stagger: 0.07 }, 0.65);
+            tl.fromTo("#s10-w-ev", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power2.out" }, 1.0);
+            tl.fromTo("#s10-wl-ev", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 1.15);
+            tl.fromTo("#s10-log", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 1.1);
+            tl.fromTo("#s10-w-sse", { scaleX: 0 }, { scaleX: 1, duration: 0.3, ease: "power2.out" }, 1.4);
+            tl.fromTo("#s10-wl-sse", { opacity: 0 }, { opacity: 1, duration: 0.3 }, 1.55);
+            tl.fromTo("#s10-ui", { opacity: 0, x: 20 }, { opacity: 1, x: 0, duration: 0.4, ease: "power3.out" }, 1.5);
+
+            // Calls go down to providers and tools, results come back up.
+            document.querySelectorAll(".s10-wd").forEach((d, i) => {
+              tl.fromTo(d, { y: 0, opacity: 1 }, { y: 84, duration: 0.5, ease: "power1.inOut", yoyo: true, repeat: 7, immediateRender: false }, 1.2 + i * 0.17);
+            });
+
+            const EVENTS = [
+              ["run.classified", "#e8f1ff"], ["agent.spawned", "#4fd1e6"], ["routing.decided", "#f0986f"],
+              ["tool.requested", "#4fd1e6"], ["source.added", "#4fd1e6"], ["agent.message_sent", "#ff6b5a"],
+              ["context.compacted", "#9be564"], ["evaluation.completed", "#c792ea"], ["loop.started", "#c792ea"],
+              ["hitl.requested", "#ffb547"], ["checkpoint.created", "#8896a6"], ["artifact.updated", "#ffb547"],
+            ];
+            const host = document.getElementById("s10-pills");
+            const rows = document.getElementById("s10-rows");
+            const seqEl = document.getElementById("s10-seq");
+            const seq = { v: 0 };
+            const T0 = 1.9, GAP = 0.45;
+            EVENTS.forEach(([name, color], i) => {
+              const p = document.createElement("div");
+              p.className = "s10-pill";
+              p.setAttribute("data-layout-allow-overlap", "");
+              p.textContent = name;
+              p.style.color = color;
+              p.style.borderColor = color;
+              host.appendChild(p);
+              const row = document.createElement("div");
+              row.className = "s10-row";
+              row.style.color = color;
+              row.innerHTML = "<i></i>" + name;
+              rows.appendChild(row);
+              const t = T0 + i * GAP;
+              tl.set(row, { opacity: 0 }, 0);
+              tl.fromTo(p, { x: 0 }, { x: 600, duration: 0.6, ease: "power1.in", immediateRender: false }, t);
+              tl.fromTo(p, { opacity: 0 }, { opacity: 1, duration: 0.12, immediateRender: false }, t);
+              tl.to(p, { opacity: 0, duration: 0.1, ease: "none" }, t + 0.5);
+              tl.fromTo(row, { opacity: 0, x: -14 }, { opacity: 1, x: 0, duration: 0.25, ease: "power2.out", immediateRender: false }, t + 0.55);
+              tl.fromTo("#s10-sse-dot", { x: 0, opacity: 1 }, { x: 76, opacity: 0.2, duration: 0.3, ease: "power1.in", immediateRender: false }, t + 0.6);
+              tl.fromTo("#s10-log", { borderColor: "#ffb547" }, { borderColor: "#2b3a49", duration: 0.35, ease: "power2.out", immediateRender: false }, t + 0.58);
+            });
+            tl.set("#s10-sse-dot", { opacity: 0 }, T0 + EVENTS.length * GAP + 0.6);
+            tl.fromTo(seq, { v: 0 }, {
+              v: 4718, duration: EVENTS.length * GAP + 0.2, ease: "none", immediateRender: false,
+              onUpdate: () => { seqEl.textContent = "#" + String(Math.round(seq.v)).padStart(4, "0"); },
+            }, T0 + 0.58);
+
+            const START = 2.5;
+            tl.fromTo("#s10-stats", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, START);
+            document.querySelectorAll("#s10-stats .s10-n").forEach((el, i) => {
+              const to = parseFloat(el.dataset.to), sep = el.dataset.sep === "1";
+              const p = { v: 0 };
+              tl.fromTo(p, { v: 0 }, {
+                v: to, duration: 1.4, ease: "power2.out", immediateRender: false,
+                onUpdate: () => { const n = Math.round(p.v); el.textContent = sep ? n.toLocaleString("en-US") : String(n); },
+              }, START + 0.2 + i * 0.12);
+            });
+
+            tl.to("#s10-band .w", { yPercent: -110, duration: 0.26, ease: "power3.in", stagger: 0.015 }, 8.2);
+            tl.to("#s10-band .sub", { opacity: 0, duration: 0.2, ease: "power1.in" }, 8.25);
+
+            window.__timelines["s10-engine"] = tl;
+          })();
+        </script>
+      </div>
+    </template>
+  </body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head><meta charset="UTF-8"></head>
+  <body>
+    <template>
+      <div data-hf-id="hf-pwgd" id="root" data-composition-id="s01-hook" data-width="1920" data-height="1080" data-duration="4.5">
+        <style>
+          @font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("assets/fonts/BarlowCondensed-600.woff2") format("woff2"); }
+          @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("assets/fonts/BarlowCondensed-700.woff2") format("woff2"); }
+          @font-face { font-family: "Geist"; font-weight: 100 900; src: url("assets/fonts/Geist-var.woff2") format("woff2"); }
+          @font-face { font-family: "Geist Mono"; font-weight: 100 900; src: url("assets/fonts/GeistMono-var.woff2") format("woff2"); }
+          #root { position: absolute; inset: 0; overflow: hidden; }
+          #s01-media { position: absolute; inset: 0; overflow: hidden; background: #06080b; }
+          #s01-media .cam { width: 1920px; height: 1080px; }
+          #s01-media .cam > video { width: 1920px; height: 1080px; }
+          #s01-scrim { position: absolute; inset: 0; background: radial-gradient(ellipse 78% 130% at 0% 50%, rgb(6 8 11 / 0.95) 42%, rgb(6 8 11 / 0.7) 62%, rgb(6 8 11 / 0) 88%); }
+          #s01-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 85% 85% at 60% 50%, transparent 55%, rgb(6 8 11 / 0.55) 100%); }
+          #s01-flash { position: absolute; inset: 0; background: #e8f1ff; opacity: 0; }
+          #s01-stage { position: absolute; inset: 0; will-change: transform; }
+          #s01-kicker { position: absolute; left: 88px; top: 72px; display: flex; align-items: center; gap: 16px; font-family: "Geist Mono", monospace; font-size: 28px; font-weight: 500; color: #ffb547; letter-spacing: 0.06em; }
+          #s01-kicker i { width: 14px; height: 14px; border-radius: 50%; background: #ffb547; box-shadow: 0 0 0 6px rgb(255 181 71 / 0.22); display: block; }
+          .s01-hl { position: absolute; left: 82px; top: 50%; font-family: "Barlow Condensed", sans-serif; font-weight: 700; text-transform: uppercase; color: #e8f1ff; line-height: 0.93; letter-spacing: 0.002em; }
+          .s01-hl .ln { display: block; transform-origin: 0% 60%; will-change: transform, opacity; }
+          #s01-l1 { font-size: 224px; transform: translateY(-50%); }
+          #s01-l2 { font-size: 188px; transform: translateY(-50%); }
+          #s01-l2 .acc { color: #4fd1e6; }
+        </style>
+
+        <div data-hf-id="hf-qf3m" id="s01-media">
+          <div data-hf-id="hf-1ia8" class="cam" id="s01-c1"><video data-hf-id="hf-7sn8" id="s01-v1" class="clip" src="clips/main-research.mp4" data-start="0" data-duration="0.95" data-media-start="5" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-a663" class="cam" id="s01-c2"><video data-hf-id="hf-dvsf" id="s01-v2" class="clip" src="clips/grid-postgres.mp4" data-start="0.95" data-duration="0.8" data-media-start="1.1" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-6822" class="cam" id="s01-c3"><video data-hf-id="hf-9o4l" id="s01-v3" class="clip" src="clips/main-critique.mp4" data-start="1.75" data-duration="0.85" data-media-start="3.4" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-ngcd" class="cam" id="s01-c4"><video data-hf-id="hf-gy5q" id="s01-v4" class="clip" src="clips/main-hitl.mp4" data-start="2.6" data-duration="0.9" data-media-start="1.4" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-mook" class="cam" id="s01-c5"><video data-hf-id="hf-9luh" id="s01-v5" class="clip" src="clips/main-editor.mp4" data-start="3.5" data-duration="1" data-media-start="5.4" data-track-index="0" muted playsinline></video></div>
+          <div data-hf-id="hf-3i84" id="s01-flash"></div>
+        </div>
+        <div data-hf-id="hf-z6do" id="s01-vignette"></div>
+        <div data-hf-id="hf-2ex8" id="s01-scrim"></div>
+
+        <div data-hf-id="hf-scyw" id="s01-stage">
+          <div data-hf-id="hf-6qju" id="s01-kicker"><i data-hf-id="hf-wt6k"></i>REAL RUN · RECORDED REPLAY</div>
+          <h1 data-hf-id="hf-3y8h" class="s01-hl" id="s01-l1" data-layout-allow-overlap=""><span data-hf-id="hf-1x0c" class="ln" data-layout-allow-overlap="">Ask a hard</span><span data-hf-id="hf-xqcz" class="ln" data-layout-allow-overlap="">question.</span></h1>
+          <h1 data-hf-id="hf-7wci" class="s01-hl" id="s01-l2" data-layout-allow-overlap=""><span data-hf-id="hf-fmrd" class="ln" data-layout-allow-overlap="">Watch an</span><span data-hf-id="hf-otlp" class="ln acc" data-layout-allow-overlap="">AI team</span><span data-hf-id="hf-e6l7" class="ln" data-layout-allow-overlap="">work it out.</span></h1>
+        </div>
+
+        <script>
+          (function () {
+            const K = 1920 / 1600;
+            // Puts UI point (fx, fy) at canvas point (cx, cy). The left edge may run past the footage because the scrim covers it; only top and bottom are clamped.
+            const cam = (fx, fy, s, cx = 1350, cy = 540) => {
+              const loY = cy / (K * s), hiY = 900 - (1080 - cy) / (K * s);
+              if (loY <= hiY) fy = Math.min(Math.max(fy, loY), hiY);
+              return { x: cx - fx * K * s, y: cy - fy * K * s, scale: s };
+            };
+            const tl = gsap.timeline({ paused: true });
+
+            const shots = [
+              ["#s01-c1", 0, 0.95, cam(390, 290, 1.7), cam(390, 290, 1.9)],
+              ["#s01-c2", 0.95, 0.8, cam(400, 290, 1.85), cam(400, 290, 1.65)],
+              ["#s01-c3", 1.75, 0.85, cam(1200, 400, 1.7), cam(1230, 430, 1.85)],
+              ["#s01-c4", 2.6, 0.9, cam(430, 390, 1.6), cam(430, 390, 1.78)],
+              ["#s01-c5", 3.5, 1.0, cam(1240, 330, 1.7), cam(1240, 400, 1.85)],
+            ];
+            shots.forEach(([sel, t, d, a, b]) => {
+              tl.fromTo(sel, a, { ...b, duration: d, ease: "power1.out" }, t);
+              if (t > 0) tl.fromTo("#s01-flash", { opacity: 0.16 }, { opacity: 0, duration: 0.14, ease: "power2.out", immediateRender: false }, t);
+            });
+
+            tl.fromTo("#s01-kicker", { opacity: 0, x: -12 }, { opacity: 1, x: 0, duration: 0.3, ease: "power2.out" }, 0.05);
+
+            const slam = (sel, t) => {
+              tl.fromTo(`${sel} .ln`, { scale: 1.45, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.42, ease: "expo.out", stagger: 0.07 }, t);
+              const land = t + 0.36;
+              tl.to("#s01-stage", { x: 7, y: -4, duration: 1 / 30, ease: "power2.out" }, land);
+              tl.to("#s01-stage", { x: -5, y: 3, duration: 1 / 30, ease: "power2.out" }, land + 1 / 30);
+              tl.to("#s01-stage", { x: 0, y: 0, duration: 1 / 30, ease: "power2.out" }, land + 2 / 30);
+            };
+            tl.set("#s01-l2 .ln", { opacity: 0 }, 0);
+            slam("#s01-l1", 0.04);
+            tl.to("#s01-l1 .ln", { y: -70, opacity: 0, duration: 0.2, ease: "power3.in", stagger: 0.03 }, 1.42);
+            slam("#s01-l2", 1.62);
+            tl.to("#s01-l2 .ln", { yPercent: -40, opacity: 0, duration: 0.22, ease: "power3.in", stagger: 0.03 }, 4.24);
+            tl.to("#s01-kicker", { opacity: 0, duration: 0.2 }, 4.28);
+
+            window.__timelines["s01-hook"] = tl;
+          })();
+        </script>
+      </div>
+    </template>
+  </body>
+</html>
