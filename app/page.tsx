@@ -1,3 +1,4 @@
+import { AuthorLinks } from "@/components/author-links";
 import { BuiltBy } from "@/components/built-by";
 import { HeroOrbit } from "@/components/hero-orbit";
 import { MissionReel } from "@/components/mission-reel";
@@ -21,14 +22,16 @@ export default async function Home() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="flex items-center justify-between px-6 py-4 sm:px-10">
-        <div className="flex items-center gap-2.5">
+      <header className="flex items-center justify-between gap-4 px-6 py-4 sm:px-10">
+        <div className="flex min-w-0 items-center gap-2.5">
           <span className="text-signal" aria-hidden>
             ◎
           </span>
-          <span className="font-display text-[16px] font-semibold uppercase tracking-[0.16em]">Agent Mission Control</span>
+          <span className="font-display text-[16px] font-semibold uppercase leading-tight tracking-[0.16em]">
+            Agent Mission Control
+          </span>
         </div>
-        <span className="label hidden sm:block">live multi-agent runtime</span>
+        <AuthorLinks />
       </header>
 
       <main className="mx-auto grid w-full max-w-6xl flex-1 gap-10 px-6 pb-16 pt-6 sm:px-10 lg:grid-cols-[1.05fr_0.95fr] lg:grid-rows-[1fr_auto_auto_1fr] lg:gap-x-12 lg:gap-y-9 lg:pt-14">
