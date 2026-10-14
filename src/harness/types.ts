@@ -8,7 +8,7 @@ export type AgentRole =
   | "evaluator"
   | "editor";
 
-export type Provider = "openai" | "anthropic";
+export type Provider = "openai" | "anthropic" | "opencode";
 
 export type RouteName = "complex" | "simple" | "critique";
 
