@@ -12,6 +12,7 @@ export const ROLE_META: Record<AgentRole, { label: string; color: string; glyph:
 export const PROVIDER_COLOR: Record<Provider, string> = {
   openai: "#4ee0b5",
   anthropic: "#f0986f",
+  opencode: "#8aa9ff",
 };
 
 export function formatMs(ms: number): string {

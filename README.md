@@ -6,13 +6,28 @@ Prompt in, a small team of agents out, and a live graph/trace/artifact view of t
 
 1. Apply the schema with `pnpm supabase db push`. RLS is enabled with no policies; only the server (secret key) can read or write, and only the server can call `create_run`.
 2. Environment variables (`.env.local`):
-   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`, optional `OPERATOR_TOKEN`.
+   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`, optional `OPERATOR_TOKEN`.
 3. Run the app and the Trigger.dev worker side by side:
 
 ```bash
 pnpm dev
 npx trigger.dev@latest dev
 ```
+
+## Model providers
+
+OpenAI, Anthropic and [OpenCode Go](https://opencode.ai/docs/go) are supported. OpenCode Go serves its models over the OpenAI Responses API at `https://opencode.ai/inference/go/v1`; set `OPENCODE_API_KEY` to use `gpt-5.6-luna`, `deepseek-v4.1-flash`, `deepseek-v4-pro` or `grok-4.6`.
+
+Each route's model and fallback can be pointed at any entry in `src/harness/config.ts`, so you can run a single route — or the whole demo — on OpenCode Go without OpenAI or Anthropic keys:
+
+```bash
+COMPLEX_MODEL=gpt-5.6-luna
+SIMPLE_MODEL=deepseek-v4.1-flash
+CRITIQUE_MODEL=grok-4.6
+SIMPLE_FALLBACK_MODEL=deepseek-v4-pro
+```
+
+Only providers whose key is set are called, so a route whose model and fallback both lack a key fails fast with a clear error. OpenCode Go bills against monthly quotas, so the recorded cost is an estimate.
 
 ## Layout
 
@@ -67,6 +82,6 @@ pnpm feature --unfeature <id>   # remove a run from the landing page
 - **Gap Detector and loops** (`src/harness/evaluator.ts`): scores the draft, names gaps, and the pure `decideNext` rule picks synthesize, another round (re-tasked researchers, an optional verifier or extra researcher), or a human decision.
 - **Human in the loop** (`src/harness/approvals.ts`, `src/trigger/approvals.ts`): Trigger.dev wait tokens; anyone viewing a live run can answer, the first answer wins, and the recommended option is used on timeout. The budget clock is paused while waiting.
 - **Context management** (`src/harness/context-window.ts`): per-agent context measurement, pruning of handed-in material first, then LLM summaries of older tool turns (deterministic truncation as fallback). Every compaction is inspectable.
-- **Model routing** (`src/harness/router.ts`): named per-call rules in `config.ts`, escalation for large prompts, provider fallback; the Routing tab shows decisions and spend per model.
+- **Model routing** (`src/harness/router.ts`): named per-call rules in `config.ts`, escalation for large prompts, provider fallback; the Routing tab shows decisions and spend per model. Each route's model and fallback can be overridden with `COMPLEX_MODEL` / `SIMPLE_MODEL` / `CRITIQUE_MODEL` (and their `_FALLBACK_MODEL` counterparts), naming a model from `MODELS`, e.g. to run a route on OpenCode Go. Calls only go to providers whose key is set.
 - **Budgets**: live `budget.updated` snapshots, per-agent search allowances, a search reserve for follow-up rounds, and a one-time extension a visitor can approve.
 - **Replay** (`src/components/use-run-player.ts`): the same event log drives live view and replay, with speed control, milestone markers and jump-to-event from the trace.
