@@ -6,11 +6,12 @@ import type { BudgetTracker } from "./budget";
 import { MODELS, EVENT_PREVIEW_CHARS, type ModelSpec } from "./config";
 import type { EventBus } from "./events";
 import type { ModelRouter, RouteDecision } from "./router";
-import type { CallKind } from "./types";
+import type { CallKind, Provider } from "./types";
 
 export interface ApiKeys {
   openai?: string;
   anthropic?: string;
+  opencode?: string;
 }
 
 export interface ToolSpec {
@@ -83,6 +84,9 @@ function capJson(value: unknown, max = EVENT_PREVIEW_CHARS): unknown {
 export class LlmClient {
   private readonly openai;
   private readonly anthropic;
+  private readonly opencode;
+  /** Providers whose API key is configured; others are skipped so a missing key can't turn a fallback into a failure. */
+  private readonly available: Set<Provider>;
   private counter = 0;
   /** Distinguishes call ids made after a resume from ids of calls interrupted by the crash. */
   private prefix = "";
@@ -92,9 +96,18 @@ export class LlmClient {
     private readonly bus: EventBus,
     private readonly budget: BudgetTracker,
     private readonly router: ModelRouter,
+    session: string,
   ) {
     this.openai = createOpenAI({ apiKey: keys.openai });
     this.anthropic = createAnthropic({ apiKey: keys.anthropic });
+    this.opencode = createOpenAI({
+      apiKey: keys.opencode,
+      baseURL: "https://opencode.ai/inference/go/v1",
+      headers: { "x-opencode-session": session, "user-agent": "agent-mission-control/0.1" },
+    });
+    this.available = new Set(
+      (Object.entries(keys) as [Provider, string | undefined][]).filter(([, key]) => Boolean(key)).map(([provider]) => provider),
+    );
   }
 
   snapshot() {
@@ -107,12 +120,17 @@ export class LlmClient {
   }
 
   private model(spec: ModelSpec): LanguageModel {
-    return spec.provider === "openai" ? this.openai(spec.id) : this.anthropic(spec.id);
+    if (spec.provider === "anthropic") return this.anthropic(spec.id);
+    if (spec.provider === "opencode") return this.opencode.responses(spec.id);
+    return this.openai(spec.id);
   }
 
   async call(req: CallRequest): Promise<CallResult> {
     const primary = this.router.decide({ kind: req.kind, estimatedInputTokens: req.estimatedInputTokens });
-    const decisions: RouteDecision[] = [primary, this.router.fallback(primary)];
+    const decisions: RouteDecision[] = [primary, this.router.fallback(primary)].filter((d) => this.available.has(d.provider));
+    if (decisions.length === 0) {
+      throw new Error(`No API key configured for the ${primary.route} route (${primary.model}). Set the provider key or point the route at a configured model.`);
+    }
     let lastError: unknown;
 
     for (let i = 0; i < decisions.length; i++) {
@@ -274,8 +292,8 @@ export class LlmClient {
           ]),
         )
       : undefined;
-    // Claude Sonnet 5.5 rejects forced tool use; with a single finish tool left, 'auto' behaves the same in practice.
-    const toolChoice = spec.provider === "anthropic" ? undefined : req.toolChoice;
+    // Some models (Claude, DeepSeek) reject a forced tool choice; with a single finish tool left, auto behaves the same in practice.
+    const toolChoice = spec.supportsForcedToolChoice === false ? undefined : req.toolChoice;
     let streamError: unknown;
     const stream = streamText({ ...base, tools, toolChoice, onError: ({ error }) => void (streamError = error) });
     let chars = 0;

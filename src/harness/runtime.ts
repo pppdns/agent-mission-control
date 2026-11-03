@@ -143,7 +143,7 @@ export class AgentRuntime {
     const artifact = new ArtifactManager(runId, bus, store, evidence);
     const registry = new ToolRegistry(bus, budget, evidence);
     const router = new ModelRouter();
-    const llm = new LlmClient(this.deps.keys, bus, budget, router);
+    const llm = new LlmClient(this.deps.keys, bus, budget, router, runId);
     const contexts = new ContextManager(bus);
     const compactor = new Compactor(bus, llm, budget, contexts);
     const ctx = new RunContext(runId, prompt, budget.limits, bus, store, budget, router, llm, registry, evidence, artifact, contexts, compactor);

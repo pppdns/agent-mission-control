@@ -33,7 +33,7 @@ export const runMission = task({
       runId: run.id,
       prompt: run.prompt,
       store: new SupabaseRunStore(),
-      keys: { openai: process.env.OPENAI_API_KEY, anthropic: process.env.ANTHROPIC_API_KEY },
+      keys: { openai: process.env.OPENAI_API_KEY, anthropic: process.env.ANTHROPIC_API_KEY, opencode: process.env.OPENCODE_API_KEY },
       mcp: mcpServersFromEnv(process.env),
       approvals: new TriggerApprovalGateway(run.id),
     });

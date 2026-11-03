@@ -14,7 +14,7 @@ Browser
   ▼
 Next.js 16 on Vercel ──tasks.trigger──▶ Trigger.dev task "run-mission" (queue "missions")
   ▲                                       │  AgentRuntime (plain TypeScript, src/harness)
-  │  SSE: /api/runs/[id]/events           │    ├─ OpenAI + Anthropic via the Vercel AI SDK
+  │  SSE: /api/runs/[id]/events           │    ├─ OpenAI + Anthropic + OpenCode Go via the Vercel AI SDK
   │  (reads events after a cursor)        │    ├─ Tavily MCP (web search), Firecrawl MCP (page fetch)
   │                                       │    └─ appends events, agents, messages, sources,
   │                                       │       artifact versions, checkpoints
@@ -90,7 +90,7 @@ Agents don't expose raw chain-of-thought. Every role submits a structured report
 
 ### LLM access and model routing
 
-`LlmClient` in `models.ts` wraps the Vercel AI SDK's OpenAI and Anthropic providers. It handles routing, provider fallback, streaming progress, usage and cost accounting (including cached and cache-write tokens), and the `llm.*` events.
+`LlmClient` in `models.ts` wraps the Vercel AI SDK's OpenAI and Anthropic providers plus an OpenCode Go provider (OpenAI Responses API). It handles routing, provider fallback, streaming progress, usage and cost accounting (including cached and cache-write tokens), and the `llm.*` events.
 
 `ModelRouter` in `router.ts` maps each call's *kind* to a named rule. All rules, routes, model prices, and fallbacks live in `src/harness/config.ts`.
 
@@ -105,7 +105,7 @@ Agents don't expose raw chain-of-thought. Every role submits a structured report
 | `escalate_large_context` | complex | Simple-route calls whose estimated prompt exceeds `LARGE_CONTEXT_TOKENS` |
 | `fallback_provider_error` | the route's fallback model | Retrying on the other provider after a failure |
 
-Critics run on a different model family from the agents they review, so they are less likely to share the same blind spots. Every decision emits `routing.decided` with the rule and the reason. The UI shows the result as a model badge on each agent and in the trace's Routing tab. The only strategy is `auto`.
+Critics run on a different model family from the agents they review, so they are less likely to share the same blind spots. Every decision emits `routing.decided` with the rule and the reason. The UI shows the result as a model badge on each agent and in the trace's Routing tab. The only strategy is `auto`. Each route's model and fallback can be overridden with `COMPLEX_MODEL` / `SIMPLE_MODEL` / `CRITIQUE_MODEL` and their `_FALLBACK_MODEL` counterparts (a model from `MODELS`); an unknown key is ignored. `LlmClient` only attempts providers whose key is configured, so a route whose model and fallback both lack a key fails fast with a clear error, and models that reject a forced tool choice (Claude, DeepSeek) run tools in auto mode.
 
 ### Tools and MCP
 
@@ -245,11 +245,11 @@ All harness tunables are in `src/harness/config.ts`: limits, the budget extensio
 
 Environment variables (in Vercel for dev and prod, and in `.env.local`):
 
-- LLM providers: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`
+- LLM providers: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENCODE_API_KEY`
 - Tools: `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`
 - Supabase: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`. The publishable key is unused, because the browser never talks to Supabase.
 - Trigger.dev: `TRIGGER_SECRET_KEY` (dev key in Development, prod key in Production)
-- Optional: `IP_HASH_SALT`, `OPERATOR_TOKEN`
+- Optional: `IP_HASH_SALT`, `OPERATOR_TOKEN`, and the per-route overrides `COMPLEX_MODEL`, `SIMPLE_MODEL`, `CRITIQUE_MODEL` plus their `_FALLBACK_MODEL` counterparts (each names a model from `MODELS`, e.g. an OpenCode Go model)
 
 ## Design decisions
 
@@ -259,12 +259,12 @@ Environment variables (in Vercel for dev and prod, and in `.env.local`):
 - **One event log for live and replay.** A persistent, sequenced log in Postgres makes replay free and deterministic (no LLM calls), and lets SSE reconnect cleanly. Trigger.dev Realtime was considered as the main channel, but replay needs the persistent log anyway.
 - **Server-only Supabase.** The data model needs no row-level access rules, and RLS without policies guards against a leaked publishable key.
 - **A fixed role catalog with a dynamic team.** The Orchestrator picks roles, counts, angles, and goals for each prompt, and loops add agents. So the topology changes from prompt to prompt while prompts and evaluation stay consistent.
-- **Cross-family critics.** Reviewers run on Anthropic while the agents they review run on OpenAI, which also shows multi-provider routing.
+- **Cross-family critics.** Reviewers run on Anthropic while the agents they review run on OpenAI (or OpenCode Go), which also shows multi-provider routing.
 - **Budget exhaustion is a path, not an error.** Hitting a limit leads to synthesis, so every recorded run ends with a brief.
 
 ## Known gaps and operational to-dos
 
-- Set hard monthly spending limits in the OpenAI and Anthropic dashboards, and check the Tavily and Firecrawl plan limits.
+- Set hard monthly spending limits in the OpenAI and Anthropic dashboards and the OpenCode Go plan, and check the Tavily and Firecrawl plan limits.
 - Tune `DEFAULT_LIMITS`, the cost cap, and `CONTEXT_BUDGETS` against measured runs. Keep only the example prompts that reliably trigger the behavior they are meant to show.
 - Curate featured runs, including one especially polished showcase run.
 - `pnpm feature` and `loadFeatured` don't filter on `runs.env`, so a development run could be featured by mistake.

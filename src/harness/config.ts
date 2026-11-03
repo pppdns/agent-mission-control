@@ -47,6 +47,8 @@ export interface ModelSpec {
   outputPerM: number;
   cacheWritePerM: number;
   reasoning: "none" | "minimal" | "low" | "medium" | "high" | null;
+  /** Defaults to true. False for models that reject a forced tool choice, which run tools in auto mode instead. */
+  supportsForcedToolChoice?: boolean;
 }
 
 export const MODELS: Record<string, ModelSpec> = {
@@ -68,6 +70,44 @@ export const MODELS: Record<string, ModelSpec> = {
     cacheWritePerM: 0.1,
     reasoning: "low",
   },
+  "gpt-5.6-luna": {
+    id: "gpt-5.6-luna",
+    provider: "opencode",
+    inputPerM: 0.2,
+    cachedInputPerM: 0.02,
+    outputPerM: 1.2,
+    cacheWritePerM: 0.25,
+    reasoning: "low",
+  },
+  "deepseek-v4.1-flash": {
+    id: "deepseek-v4.1-flash",
+    provider: "opencode",
+    inputPerM: 0.3,
+    cachedInputPerM: 0.006,
+    outputPerM: 1.2,
+    cacheWritePerM: 0,
+    reasoning: null,
+    supportsForcedToolChoice: false,
+  },
+  "deepseek-v4-pro": {
+    id: "deepseek-v4-pro",
+    provider: "opencode",
+    inputPerM: 1.32,
+    cachedInputPerM: 0.044,
+    outputPerM: 3.96,
+    cacheWritePerM: 0,
+    reasoning: null,
+    supportsForcedToolChoice: false,
+  },
+  "grok-4.6": {
+    id: "grok-4.6",
+    provider: "opencode",
+    inputPerM: 2,
+    cachedInputPerM: 0.5,
+    outputPerM: 6,
+    cacheWritePerM: 0,
+    reasoning: null,
+  },
   "claude-sonnet-5-5": {
     id: "claude-sonnet-5-5",
     provider: "anthropic",
@@ -76,6 +116,7 @@ export const MODELS: Record<string, ModelSpec> = {
     outputPerM: 10,
     cacheWritePerM: 2.5,
     reasoning: null,
+    supportsForcedToolChoice: false,
   },
 };
 
@@ -86,23 +127,31 @@ export interface RouteSpec {
   reason: string;
 }
 
+/** Resolves a per-route override (`${ROUTE}_MODEL` / `${ROUTE}_FALLBACK_MODEL`) to a model from `MODELS`; unknown keys are ignored. */
+const resolveRoute = (route: RouteName, key: string, fallback: string): string => {
+  const value = process.env[`${route.toUpperCase()}_${key}`];
+  return value && value in MODELS ? value : fallback;
+};
+const routeModel = (route: RouteName, fallback: string): string => resolveRoute(route, "MODEL", fallback);
+const routeFallback = (route: RouteName, fallback: string): string => resolveRoute(route, "FALLBACK_MODEL", fallback);
+
 export const ROUTES: Record<RouteName, RouteSpec> = {
   complex: {
     name: "complex",
-    model: "gpt-6.1-sol",
-    fallback: "claude-sonnet-5-5",
+    model: routeModel("complex", "gpt-6.1-sol"),
+    fallback: routeFallback("complex", "claude-sonnet-5-5"),
     reason: "Planning, gap analysis and synthesis need the strongest reasoning model.",
   },
   simple: {
     name: "simple",
-    model: "gpt-6-luna",
-    fallback: "claude-sonnet-5-5",
+    model: routeModel("simple", "gpt-6-luna"),
+    fallback: routeFallback("simple", "claude-sonnet-5-5"),
     reason: "Parallel research tool loops are cheap and latency-sensitive.",
   },
   critique: {
     name: "critique",
-    model: "claude-sonnet-5-5",
-    fallback: "gpt-6.1-sol",
+    model: routeModel("critique", "claude-sonnet-5-5"),
+    fallback: routeFallback("critique", "gpt-6.1-sol"),
     reason: "Critics run on a different model family than the agents they review, so they do not share blind spots.",
   },
 };

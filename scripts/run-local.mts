@@ -29,7 +29,7 @@ const deps = (store: MemoryStore) => ({
   runId: "local",
   prompt,
   store,
-  keys: { openai: process.env.OPENAI_API_KEY, anthropic: process.env.ANTHROPIC_API_KEY },
+  keys: { openai: process.env.OPENAI_API_KEY, anthropic: process.env.ANTHROPIC_API_KEY, opencode: process.env.OPENCODE_API_KEY },
   mcp: mcpServersFromEnv(process.env),
   approvals: new AutoApprovalGateway(1500),
   onEvent: (line: string) => console.log(line),
