@@ -1,6 +1,59 @@
-# agent-mission-control
+<h1 align="center">◎ Agent Mission Control</h1>
 
-Prompt in, a small team of agents out, and a live graph/trace/artifact view of the whole run. See [docs/architecture.md](docs/architecture.md) for how it works and why.
+<p align="center">
+  <strong>Watch AI agents work as a team.</strong><br>
+  Prompt in, a small team of agents out, and a live graph, trace and artifact view of the whole run.
+</p>
+
+<p align="center">
+  <a href="https://www.agentmissioncontrol.dev"><strong>Live demo</strong></a> ·
+  <a href="https://www.agentmissioncontrol.dev/run/jfqO2FjlhJK4EWGw?play=1">Watch a full replay</a> ·
+  <a href="docs/architecture.md">Architecture</a>
+</p>
+
+<p align="center">
+  <a href="https://www.agentmissioncontrol.dev/run/jfqO2FjlhJK4EWGw?play=1">
+    <img src="docs/screenshots/replay.webp" alt="A recorded run replaying at 4x: the orchestrator spawns researchers, a skeptic and a verifier, messages fly between agents and MCP servers, and the shared brief fills in section by section" width="100%">
+  </a>
+</p>
+
+Give it a hard question. An orchestrator assembles a team of agents at runtime that plan, research, argue and write, while every message, tool call, token and dollar stays visible. The same event log drives the live view and the replay, so any run can be watched again for free. See [docs/architecture.md](docs/architecture.md) for how it works and why.
+
+<p align="center">
+  <img src="docs/screenshots/landing.webp" alt="Landing page: prompt box, example questions and a reel replaying featured runs" width="100%">
+</p>
+
+## A tour of a run
+
+### Mission control
+
+Agent graph on the left, the live brief on the right, the full event trace underneath. Header metrics track cost, tokens, elapsed time and LLM calls, and the budget bar shows what the team has left.
+
+<img src="docs/screenshots/run.webp" alt="Completed run: agent graph with 8 agents and two MCP servers, the final brief with cited sources and confidence levels, and the event trace" width="100%">
+
+### Human in the loop
+
+When the Gap Detector finds gaps but the research budget is used up, the run pauses and asks whoever is watching. The first answer wins, the recommended option is used on timeout, and the budget clock stops while it waits.
+
+<img src="docs/screenshots/hitl.webp" alt="Budget decision card asking the visitor to extend the budget or write the brief now, while the brief shows sections under review by the Source Verifier" width="100%">
+
+### Inspect any agent
+
+Click a node to see its goal, model routing decision and reason, context window breakdown, every compaction, and its tool permissions.
+
+<img src="docs/screenshots/inspector.webp" alt="Inspector for the Source Verifier: tokens, cost, retries, routing rule critique_cross_family to claude-sonnet-5-5, context window chart with prune and summarize compactions" width="100%">
+
+### Model routing and spend
+
+Named rules send each call to a model: cheap and fast for parallel research, a different model family for critics, the strongest model for planning and synthesis. The Routing tab shows spend per model and every decision with its reason.
+
+<img src="docs/screenshots/routing.webp" alt="Routing tab: spend by model for claude-sonnet-5-5, gpt-6.1-sol and gpt-6-luna, and a list of routing decisions per agent" width="100%">
+
+### Every question gets its own team
+
+Nothing is a template. The orchestrator picks the roles, names and size of the team per question.
+
+<img src="docs/screenshots/teams.webp" alt="Three featured runs with different teams: Ceasefire and Settlement Researchers for a comparison, Biology and Trials Researchers for a research question, Efficacy and Durability Researchers for another" width="100%">
 
 ## Setup
 
