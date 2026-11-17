@@ -19,7 +19,7 @@ interface ExposeOptions<I> {
   inputSchema: ZodType<I>;
   budget: "search" | "fetch" | null;
   validate?: ToolDef<I>["validate"];
-  toArguments(input: I): Record<string, unknown>;
+  toArguments(input: I, ctx: ToolContext): Record<string, unknown>;
   parse(raw: string, input: I, ctx: ToolContext): ToolResult;
 }
 
@@ -81,9 +81,9 @@ export class McpToolAdapter {
       budget: opts.budget,
       displaySchema: remote.inputSchema,
       validate: opts.validate,
-      toParams: (input) => opts.toArguments(input),
+      toParams: (input, ctx) => opts.toArguments(input, ctx),
       execute: async (input, ctx) => {
-        const raw = await this.call(opts.mcpTool, opts.toArguments(input));
+        const raw = await this.call(opts.mcpTool, opts.toArguments(input, ctx));
         return opts.parse(raw, input, ctx);
       },
     };
@@ -115,8 +115,13 @@ const searchInput = z.object({
   query: z.string().min(3).max(300).describe("A focused web search query"),
 });
 
+// fetch_page takes a source id, not a URL: an agent can only fetch pages its team's searches actually returned,
+// and a URL recalled from memory cannot even be expressed (an allow-list on URLs only catches it after the fact).
 const fetchInput = z.object({
-  url: z.string().url().describe("A URL that appeared in an earlier web_search result of this run"),
+  sourceId: z
+    .string()
+    .regex(/^s\d+$/)
+    .describe("Id of a web_search result from this run, like s3"),
 });
 
 interface TavilyResult {
@@ -177,15 +182,18 @@ export function exposeFirecrawlScrape(adapter: McpToolAdapter) {
     name: "fetch_page",
     mcpTool: "firecrawl_scrape",
     description:
-      "Fetch the full text of ONE page (Firecrawl). Only URLs that already appeared in this run's web_search results are allowed. Expensive: use sparingly.",
+      "Fetch the full text of ONE web_search result (Firecrawl), given its source id like s3. Expensive: use sparingly.",
     inputSchema: fetchInput,
     budget: "fetch",
-    validate: ({ url }, ctx) =>
-      ctx.evidence.hasUrl(url) ? null : "fetch_page only accepts URLs returned by this run's own web_search results.",
-    toArguments: ({ url }) => ({ url, formats: ["markdown"], onlyMainContent: true }),
+    // Every source in the evidence store came from this run's searches (a fetch only upgrades an existing one),
+    // so any known id is a legitimate target, including a page a teammate already fetched.
+    validate: ({ sourceId }, ctx) =>
+      ctx.evidence.get(sourceId) ? null : `fetch_page only accepts the id of a source from this run's web_search results; ${sourceId} is not one.`,
+    toArguments: ({ sourceId }, ctx) => ({ url: ctx.evidence.get(sourceId)?.url ?? null, formats: ["markdown"], onlyMainContent: true }),
     parse(raw, input, ctx) {
+      const url = ctx.evidence.get(input.sourceId)!.url;
       let markdown = "";
-      let title = input.url;
+      let title = url;
       try {
         const parsed = JSON.parse(raw) as { markdown?: string; metadata?: { title?: string } };
         markdown = parsed.markdown ?? "";
@@ -196,7 +204,7 @@ export function exposeFirecrawlScrape(adapter: McpToolAdapter) {
       if (!markdown.trim()) throw new Error("The page returned no readable content");
       const content = markdown.slice(0, FETCH_CHAR_LIMIT);
       const source = ctx.evidence.add({
-        url: input.url,
+        url,
         title,
         snippet: clip(content, 500),
         content,

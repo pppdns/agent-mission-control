@@ -29,7 +29,7 @@ export interface MissionMetrics {
   unknownCitations: string[];
   /** Tool calls the registry refused because the agent's role may not use that tool. */
   deniedToolCalls: number;
-  /** fetch_page calls refused because the URL did not come from this run's own searches. */
+  /** fetch_page calls refused because the target was not one of this run's own search results. */
   refusedFetches: number;
   failedAgents: string[];
   llmFailures: number;
@@ -75,7 +75,7 @@ export function reportFromEvents(events: RunEvent[]): MissionReport {
       claimsWithSources: claims.filter((b) => b.sourceIds.length > 0).length,
       unknownCitations: [...cited].filter((id) => !known.has(id)),
       deniedToolCalls: tools.filter((t) => t.errors.some((e) => e.includes("is not permitted"))).length,
-      refusedFetches: tools.filter((t) => t.tool === "fetch_page" && t.errors.some((e) => e.includes("only accepts URLs"))).length,
+      refusedFetches: tools.filter((t) => t.tool === "fetch_page" && t.errors.some((e) => (e.includes("only accepts URLs") || e.includes("only accepts the id")))).length,
       failedAgents: Object.values(view.agents)
         .filter((a) => a.status === "failed")
         .map((a) => `${a.info.name}${a.error ? ` (${a.error.slice(0, 160)})` : ""}`),

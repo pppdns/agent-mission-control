@@ -66,10 +66,6 @@ export class EvidenceStore {
     return this.byId.get(id);
   }
 
-  hasUrl(url: string): boolean {
-    return this.byUrl.has(normalizeUrl(url));
-  }
-
   all(): Source[] {
     return [...this.byId.values()];
   }

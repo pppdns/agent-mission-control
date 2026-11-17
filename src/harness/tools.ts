@@ -31,7 +31,7 @@ export interface ToolDef<I = unknown> {
   /** Fail-closed pre-check, run before budget is reserved. Return a refusal message to block the call. */
   validate?(input: I, ctx: ToolContext): string | null;
   /** Parameters as sent to the underlying tool (shown in the UI). */
-  toParams?(input: I): unknown;
+  toParams?(input: I, ctx: ToolContext): unknown;
   execute(input: I, ctx: ToolContext): Promise<ToolResult>;
 }
 
@@ -155,7 +155,7 @@ export class ToolRegistry {
 
     const refusal = def.validate?.(input, ctx) ?? null;
     if (refusal) {
-      requested(def.toParams?.(input) ?? input);
+      requested(def.toParams?.(input, ctx) ?? input);
       failed(refusal);
       return { ok: false, content: `ERROR: ${refusal}` };
     }
@@ -163,13 +163,13 @@ export class ToolRegistry {
     if (def.budget) {
       const budgetRefusal = this.budget.reserve(def.budget, req.agentId);
       if (budgetRefusal) {
-        requested(def.toParams?.(input) ?? input);
+        requested(def.toParams?.(input, ctx) ?? input);
         failed(budgetRefusal);
         return { ok: false, content: `ERROR: ${budgetRefusal} Work with the evidence you already have.` };
       }
     }
 
-    requested(def.toParams?.(input) ?? input);
+    requested(def.toParams?.(input, ctx) ?? input);
     let lastError = "unknown error";
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const startedAt = Date.now();
