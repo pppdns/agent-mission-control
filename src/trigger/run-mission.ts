@@ -36,6 +36,7 @@ export const runMission = task({
       keys: { openai: process.env.OPENAI_API_KEY, anthropic: process.env.ANTHROPIC_API_KEY },
       mcp: mcpServersFromEnv(process.env),
       approvals: new TriggerApprovalGateway(run.id),
+      traceTags: [ctx.environment.type.toLowerCase()],
     });
     const attempt = ctx.attempt.number;
     const summary = attempt > 1 ? await runtime.resume(attempt) : await runtime.run();

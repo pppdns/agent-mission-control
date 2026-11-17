@@ -59,7 +59,7 @@ Nothing is a template. The orchestrator picks the roles, names and size of the t
 
 1. Apply the schema with `pnpm supabase db push`. RLS is enabled with no policies; only the server (secret key) can read or write, and only the server can call `create_run`.
 2. Environment variables (`.env.local`):
-   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`, optional `OPERATOR_TOKEN`.
+   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TRIGGER_SECRET_KEY`, optional `IP_HASH_SALT`, optional `OPERATOR_TOKEN`, optional `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_BASE_URL` (tracing), and `AI_GATEWAY_API_KEY` for the live evals.
 3. Run the app and the Trigger.dev worker side by side:
 
 ```bash
@@ -103,6 +103,19 @@ pnpm test:e2e    # Playwright: landing reel and cards (desktop and phone), repla
 ```
 
 `tests/fixtures/*.json` are event logs from real local runs. With `E2E_FIXTURES=1`, `/run/fixture-*` renders without a database row, the tests serve the SSE stream from the fixture, and the landing page features the fixtures.
+
+## Evals
+
+```bash
+pnpm eval:offline   # free: trajectory and citation checks on recorded runs
+pnpm eval           # everything, including live planner, safety and end-to-end suites (~$2)
+```
+
+Promptfoo suites for offline regression, planner component evals with a four-model comparison, safety (direct and indirect prompt injection), and end-to-end missions with an LLM judge. See [evals/README.md](evals/README.md) for the design and the latest results.
+
+## Tracing
+
+With `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` and `LANGFUSE_BASE_URL` set, runs from Trigger.dev, `scripts/run-local.mts` and the evals are exported to Langfuse as OpenTelemetry traces (`mission → phase → agent → LLM and tool calls`, with tokens and cost). Without them tracing is a no-op. See [Observability](docs/architecture.md#observability).
 
 ## Landing page showcase
 

@@ -33,12 +33,14 @@ Next.js 16 on Vercel ──tasks.trigger──▶ Trigger.dev task "run-mission"
 | --- | --- |
 | `src/harness/` | The agent runtime: phase machine, agent loop, roles, router, LLM client, tool registry, MCP adapter, evidence store, artifact, budget, context management, evaluator, approvals, checkpoints, event bus, and the pure event-to-view reducer |
 | `src/trigger/` | Thin Trigger.dev wrappers: the `run-mission` task and the wait-token approval gateway |
+| `src/observability/` | OpenTelemetry export to Langfuse: the OTLP exporter used by Trigger.dev, and a tracer provider for local scripts and evals |
 | `src/server/` | Server-only code: Supabase client and `RunStore`, moderation, rate limits, spend cap, stale-run handling, featured runs |
 | `app/` | Next.js routes: landing page, `/run/[id]`, `/api/runs/[id]/events`, Server Actions in `app/actions.ts` |
 | `src/components/` | Client UI: agent graph, artifact panel, trace, inspector, budget and context meters, approval card, replay bar, landing reel |
 | `supabase/migrations/` | Database schema |
 | `scripts/` | `run-local.mts` (harness without database or Trigger.dev), `feature-runs.mts` (curate landing-page runs) |
 | `tests/` | Vitest unit tests, Playwright end-to-end tests, and recorded event logs used as fixtures |
+| `evals/` | Promptfoo eval suites: offline regression, planner component and model comparison, safety, and end-to-end missions ([evals/README.md](../evals/README.md)) |
 
 ## Lifecycle of a run
 
@@ -172,6 +174,24 @@ The Gap Detector's decision can pause the run with a human decision of one of tw
 
 The event log is the source of truth for the UI. Large payloads, such as LLM text, structured output, and tool results, are truncated to `EVENT_PREVIEW_CHARS` in events. Full source content lives in the `sources` table.
 
+## Observability
+
+A run has two traces, for two audiences.
+
+- **The event log** is the product-facing trace. It drives the run page, which shows every message, LLM call, tool call, routing decision, and compaction live and in replays (see [Events](#events)).
+- **OpenTelemetry** is the engineering-facing trace, exported to [Langfuse](https://langfuse.com). It shows each run as a span tree, `mission → phase:<name> → agent:<name> → LLM generations and tool:<name> calls`, with prompts, outputs, token usage, cost, and latency on every LLM call. Langfuse gives cross-run search, cost and latency dashboards, and a place to attach scores.
+
+How it's wired:
+
+- `src/harness/tracing.ts` depends only on `@opentelemetry/api` and the AI SDK's `@ai-sdk/otel` integration. `withSpan` creates the mission, phase, agent, and tool spans, and `registerAiTelemetry` makes every AI SDK call emit GenAI spans. The call's routing metadata (call ID, rule, route, agent) is attached to those spans. Without a registered tracer provider all of this is a no-op, so the harness stays runtime-agnostic.
+- In Trigger.dev, `trigger.config.ts` adds `LangfuseExporter` (`src/observability/langfuse.ts`) to the worker's own OpenTelemetry setup. The same spans therefore show up in both the Trigger.dev run view and Langfuse. The exporter reads `LANGFUSE_*` at export time and drops spans when the keys are missing.
+- Local scripts and evals call `startTracing()` (`src/observability/otel.ts`), which registers a tracer provider with the same exporter.
+- Traces are tagged with their origin (`development`, `production`, `local`, `eval`) and grouped into a Langfuse session by run ID. A resumed attempt starts a new trace in the same session.
+
+## Evals
+
+The [`evals/`](../evals/README.md) folder holds a Promptfoo suite that covers the usual eval types: offline regression checks on recorded runs, a component eval of the planner across four models, safety checks (direct and indirect prompt injection, harmful requests), and end-to-end missions graded by code and by an LLM judge from a third model family. The providers wrap the real harness, and live and recorded runs go through the same report and assertions. `.github/workflows/evals.yml` can run them in CI. It is manual-only for now, because the live suites cost money.
+
 ## Persistence
 
 All tables are in `supabase/migrations/`, and every table has RLS enabled with no policies. The browser never gets a Supabase client. Server Actions, Server Components, the SSE route, and Trigger.dev tasks use the secret key, so the publishable key can read nothing.
@@ -249,6 +269,8 @@ Environment variables (in Vercel for dev and prod, and in `.env.local`):
 - Tools: `TAVILY_API_KEY`, `FIRECRAWL_API_KEY`
 - Supabase: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`. The publishable key is unused, because the browser never talks to Supabase.
 - Trigger.dev: `TRIGGER_SECRET_KEY` (dev key in Development, prod key in Production)
+- Tracing (optional): `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_BASE_URL` (in Trigger.dev too, for production traces)
+- Evals only: `AI_GATEWAY_API_KEY` (the LLM judge and the Gemini comparison model)
 - Optional: `IP_HASH_SALT`, `OPERATOR_TOKEN`
 
 ## Design decisions

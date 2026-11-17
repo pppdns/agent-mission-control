@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Offline regression evals: the same code-graded trajectory checks as mission.yaml, run on recorded event logs
+# from real runs (tests/fixtures). No API calls, no cost, a few seconds; suitable for every commit.
+# Add a recorded run here whenever a live run shows a behaviour worth protecting.
+description: Offline regression - trajectory checks on recorded runs (no API calls)
+
+prompts:
+  - "{{fixture}}"
+
+providers:
+  - id: file://providers/recorded.ts
+    label: recorded run
+
+defaultTest:
+  assert:
+    - type: javascript
+      value: file://lib/asserts.ts:completed
+      metric: completed
+    - type: javascript
+      value: file://lib/asserts.ts:missionClass
+      metric: classification
+    - type: javascript
+      value: file://lib/asserts.ts:allSectionsFilled
+      metric: structure
+    - type: javascript
+      value: file://lib/asserts.ts:citationsResolve
+      metric: citations
+    - type: javascript
+      value: file://lib/asserts.ts:claimsCited
+      metric: citations
+    - type: javascript
+      value: file://lib/asserts.ts:withinBudget
+      metric: budget
+    - type: javascript
+      value: file://lib/asserts.ts:toolDiscipline
+      metric: tool discipline
+    - type: javascript
+      value: file://lib/asserts.ts:noFailedAgents
+      metric: reliability
+
+tests:
+  - description: "recorded: follow-up research loop (decision)"
+    vars: { fixture: tests/fixtures/run-loop.json, expected_class: decision }
+  - description: "recorded: human decision on a conflict (comparison)"
+    vars: { fixture: tests/fixtures/run-hitl.json, expected_class: comparison }

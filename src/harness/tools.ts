@@ -4,6 +4,7 @@ import { EVENT_PREVIEW_CHARS } from "./config";
 import type { EventBus, ToolManifestEntry } from "./events";
 import type { EvidenceStore } from "./evidence";
 import type { ToolSpec } from "./models";
+import { setOutput, withSpan } from "./tracing";
 
 export interface ToolContext {
   agentId: string;
@@ -96,7 +97,26 @@ export class ToolRegistry {
     );
   }
 
-  async invoke(req: InvokeRequest): Promise<InvokeResult> {
+  /** Runs one tool call through the checks below, inside a `tool:<name>` span. */
+  invoke(req: InvokeRequest): Promise<InvokeResult> {
+    const def = this.tools.get(req.toolName);
+    return withSpan(
+      `tool:${req.toolName}`,
+      {
+        type: "tool",
+        input: req.rawInput,
+        attributes: { "tool.name": req.toolName, "tool.server": def?.server ?? "", "agent.id": req.agentId, "tool.call_id": req.toolCallId },
+      },
+      async (span) => {
+        const result = await this.invokeChecked(req);
+        span.setAttribute("tool.ok", result.ok);
+        setOutput(span, result.content);
+        return result;
+      },
+    );
+  }
+
+  private async invokeChecked(req: InvokeRequest): Promise<InvokeResult> {
     const def = this.tools.get(req.toolName);
     const base = { toolCallId: req.toolCallId, tool: req.toolName };
     const requested = (params: unknown) =>

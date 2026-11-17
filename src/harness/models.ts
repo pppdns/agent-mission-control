@@ -6,6 +6,7 @@ import type { BudgetTracker } from "./budget";
 import { MODELS, EVENT_PREVIEW_CHARS, type ModelSpec } from "./config";
 import type { EventBus } from "./events";
 import type { ModelRouter, RouteDecision } from "./router";
+import { registerAiTelemetry } from "./tracing";
 import type { CallKind } from "./types";
 
 export interface ApiKeys {
@@ -95,6 +96,7 @@ export class LlmClient {
   ) {
     this.openai = createOpenAI({ apiKey: keys.openai });
     this.anthropic = createAnthropic({ apiKey: keys.anthropic });
+    registerAiTelemetry();
   }
 
   snapshot() {
@@ -166,7 +168,7 @@ export class LlmClient {
         this.bus.emit({ type: "llm.streaming", data: { callId, outputChars, elapsedMs: now - startedAt } }, req.agentId);
       };
       try {
-        const result = await this.execute(spec, req, progress);
+        const result = await this.execute(spec, req, progress, { callId, rule: decision.rule, route: decision.route, agentId: req.agentId });
         const latencyMs = Date.now() - startedAt;
         const costUsd = computeCost(spec, result.usage);
         this.budget.recordLlm({ ...result.usage, costUsd });
@@ -224,8 +226,16 @@ export class LlmClient {
     throw lastError instanceof Error ? lastError : new Error(String(lastError));
   }
 
-  private async execute(spec: ModelSpec, req: CallRequest, progress: (outputChars: number) => void) {
+  private async execute(
+    spec: ModelSpec,
+    req: CallRequest,
+    progress: (outputChars: number) => void,
+    trace: { callId: string; rule: string; route: string; agentId: string },
+  ) {
     const base = {
+      // Picked up by the OpenTelemetry integration registered in tracing.ts; a no-op without a tracer provider.
+      telemetry: { functionId: `${trace.agentId}: ${req.purpose}` },
+      runtimeContext: { ...trace, purpose: req.purpose },
       model: this.model(spec),
       system: req.system,
       messages: req.messages,

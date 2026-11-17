@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# End-to-end evals: full missions on a small golden set, one prompt per task class.
+# Code-graded trajectory checks on the event log (completion, structure, citations, budget, tool discipline)
+# plus model-graded checks on the final brief (answers the question, balance, groundedness).
+# About $0.35 per run in model spend, plus Tavily/Firecrawl credits; 3-5 minutes each.
+# Each run's event log is saved to evals/.results/runs/. Set EVAL_REUSE_RUNS=1 to grade those saved runs again
+# (e.g. after changing a rubric) without new model calls.
+description: Missions (end to end) - trajectory checks and LLM-as-judge on the brief
+
+prompts:
+  - "{{prompt}}"
+
+providers:
+  - id: file://providers/mission.ts
+    label: mission
+
+defaultTest:
+  options:
+    provider: vercel:google/gemini-4-argon
+    timeout: 600000
+  assert:
+    # ---- code-graded: trajectory and structure
+    - type: javascript
+      value: file://lib/asserts.ts:completed
+      metric: completed
+    - type: javascript
+      value: file://lib/asserts.ts:missionClass
+      metric: classification
+    - type: javascript
+      value: file://lib/asserts.ts:allSectionsFilled
+      metric: structure
+    - type: javascript
+      value: file://lib/asserts.ts:citationsResolve
+      metric: citations
+    - type: javascript
+      value: file://lib/asserts.ts:claimsCited
+      metric: citations
+    - type: javascript
+      value: file://lib/asserts.ts:withinBudget
+      metric: budget
+    - type: javascript
+      value: file://lib/asserts.ts:toolDiscipline
+      metric: tool discipline
+    - type: javascript
+      value: file://lib/asserts.ts:noFailedAgents
+      metric: reliability
+    # ---- model-graded: the brief itself
+    - type: llm-rubric
+      metric: answers the question
+      transform: output.brief
+      value: |
+        The visitor asked: "{{prompt}}"
+        Pass if the brief directly answers this question: the executive summary and recommendation take a clear,
+        specific position (or explain precisely what it depends on), rather than restating the question or
+        hedging generically.
+    - type: llm-rubric
+      metric: balance
+      transform: output.brief
+      value: |
+        Pass if the brief represents counter-evidence fairly: the counterarguments and risks sections contain
+        substantive points that actually push against the main conclusion, not token caveats.
+    - type: llm-rubric
+      metric: groundedness
+      transform: "'BRIEF:\\n' + output.brief + '\\n\\nSOURCES THE AGENTS RETRIEVED:\\n' + output.sources"
+      value: |
+        Check the brief's claims against the retrieved sources (ids like s3; only excerpts are shown). Pass if the
+        specific factual claims, especially numbers, are consistent with the cited sources' excerpts, and no
+        important claim cites a source that is clearly about something else. Fail if you find a claim that
+        contradicts its cited source or a number that appears nowhere in it. Be lenient when an excerpt is simply
+        too short to confirm a claim.
+
+tests:
+  - description: "research"
+    vars:
+      prompt: "What does the evidence say about how remote work affected software developer productivity since 2020?"
+      expected_class: research
+  - description: "comparison"
+    vars:
+      prompt: "Compare Postgres, SQLite and DynamoDB for a five-person B2B SaaS."
+      expected_class: comparison
+  - description: "decision"
+    vars:
+      prompt: "Should a 20-person startup move from AWS to Hetzner to cut infrastructure costs?"
+      expected_class: "decision|comparison"

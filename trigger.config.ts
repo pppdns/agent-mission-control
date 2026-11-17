@@ -1,4 +1,5 @@
 import { defineConfig } from "@trigger.dev/sdk";
+import { LangfuseExporter } from "./src/observability/langfuse";
 
 export default defineConfig({
   project: "proj_wyrlfblciupfknnpcjcf",
@@ -19,4 +20,9 @@ export default defineConfig({
     },
   },
   dirs: ["./src/trigger"],
+  // Every span of a task (including the harness's mission/phase/agent/tool spans and the AI SDK's LLM spans) also goes
+  // to Langfuse. The exporter reads LANGFUSE_* at runtime and drops spans when they are not set.
+  telemetry: {
+    exporters: [new LangfuseExporter()],
+  },
 });

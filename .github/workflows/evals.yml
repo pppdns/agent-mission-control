@@ -1,0 +1,72 @@
+# Tests and evals. Deliberately manual-only for now: live evals spend real money on model and search APIs.
+# To run the free checks on every push, uncomment the `push` and `pull_request` triggers below
+# (the live job stays manual either way).
+name: evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      live:
+        description: "Also run the live evals (planner, safety, missions). Costs roughly $2-3 in API calls."
+        type: boolean
+        default: false
+  # push:
+  #   branches: [stable]
+  # pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    name: Unit tests + offline evals (free)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm eval:offline
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-eval-results
+          path: evals/.results/
+
+  live:
+    name: Live evals
+    needs: offline
+    if: github.event_name == 'workflow_dispatch' && inputs.live
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_BASE_URL: ${{ vars.LANGFUSE_BASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The eval scripts load .env.local; in CI the secrets come from the job environment instead.
+      - run: touch .env.local
+      - run: pnpm eval:planner
+      - run: pnpm eval:safety
+      - run: pnpm eval:mission
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-eval-results
+          path: evals/.results/

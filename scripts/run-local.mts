@@ -13,6 +13,10 @@ import { mcpServersFromEnv } from "../src/harness/env";
 import { AgentRuntime } from "../src/harness/runtime";
 import { MemoryStore } from "../src/harness/store";
 import { buildView } from "../src/harness/view";
+import { stopTracing, startTracing } from "../src/observability/otel";
+
+// Traces go to Langfuse when LANGFUSE_* keys are set; otherwise tracing is a no-op.
+const tracing = startTracing();
 
 const flags = process.argv.slice(2).filter((a) => a.startsWith("--"));
 const prompt = process.argv.slice(2).filter((a) => !a.startsWith("--")).join(" ") || "Should a five-person startup run SQLite in production?";
@@ -33,6 +37,7 @@ const deps = (store: MemoryStore) => ({
   mcp: mcpServersFromEnv(process.env),
   approvals: new AutoApprovalGateway(1500),
   onEvent: (line: string) => console.log(line),
+  traceTags: ["local"],
 });
 
 const store = new MemoryStore();
@@ -66,3 +71,6 @@ function printBrief(s: MemoryStore) {
     for (const b of section.blocks) console.log(`- ${b.text} ${b.sourceIds.length ? `[${b.sourceIds.join(",")}]` : ""}`);
   }
 }
+
+await stopTracing();
+if (tracing) console.log("\nTrace sent to Langfuse (session: local).");

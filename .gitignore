@@ -48,3 +48,6 @@ supabase/.temp
 # playwright
 /test-results/
 /playwright-report/
+
+# promptfoo eval output
+/evals/.results/

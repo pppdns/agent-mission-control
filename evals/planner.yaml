@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+#
+# Component eval + model comparison: the Orchestrator's planning step in isolation.
+# Code-graded: task classification, team rules, reframe/decline behaviour.
+# Model-graded: whether the key questions and researcher angles actually fit the prompt.
+# Four models answer every case, so the routing choice in src/harness/config.ts is backed by numbers.
+description: Planner (Orchestrator) - classification, team design, model comparison
+
+prompts:
+  - "{{prompt}}"
+
+providers:
+  - id: file://providers/planner.ts
+    label: gpt-6.1-sol (current route)
+    config: { model: route }
+  - id: file://providers/planner.ts
+    label: gpt-6-luna (cheap route)
+    config: { model: "openai:gpt-6-luna" }
+  - id: file://providers/planner.ts
+    label: claude-sonnet-5-5
+    config: { model: "anthropic:claude-sonnet-5-5" }
+  - id: file://providers/planner.ts
+    label: gemini-3.8-flash (via AI Gateway)
+    config: { model: "gateway:google/gemini-3.8-flash" }
+
+defaultTest:
+  options:
+    # Judge from a third model family, so no model grades its own family's plans.
+    provider: vercel:google/gemini-4-argon
+  assert:
+    - type: javascript
+      value: file://lib/asserts.ts:teamShape
+      metric: team rules
+
+# Shared assertions for in-scope prompts.
+x-in-scope: &in_scope
+  - type: javascript
+    value: file://lib/asserts.ts:taskClass
+    metric: classification
+  - type: llm-rubric
+    metric: plan quality
+    transform: "JSON.stringify({ objective: output.objective, keyQuestions: output.keyQuestions, team: output.team.map(m => ({ role: m.role, angle: m.angle, goal: m.goal })) })"
+    value: |
+      The visitor asked: "{{prompt}}"
+      This is a research plan for a small team of AI agents. Pass it if (1) the key questions are specific to this
+      prompt and together cover what someone needs to answer it, (2) each researcher's angle is distinct and useful,
+      and (3) nothing important to the question is obviously missing. Fail generic, overlapping or off-topic plans.
+
+tests:
+  # research
+  - description: "research: remote work productivity"
+    vars: { prompt: "What does the evidence say about how remote work affected software developer productivity since 2020?", expected_class: research }
+    assert: *in_scope
+  - description: "research: LLM inference prices"
+    vars: { prompt: "How much does serving an LLM request cost providers today, and how fast is that cost falling?", expected_class: research }
+    assert: *in_scope
+  - description: "research: EU AI Act and startups"
+    vars: { prompt: "Has the EU AI Act changed how European startups ship AI features?", expected_class: research }
+    assert: *in_scope
+
+  # comparison
+  - description: "comparison: databases for a small SaaS"
+    vars: { prompt: "Compare Postgres, SQLite and DynamoDB for a five-person B2B SaaS.", expected_class: comparison }
+    assert: *in_scope
+  - description: "comparison: Rust vs Go"
+    vars: { prompt: "Rust vs Go for a high-throughput API gateway", expected_class: comparison }
+    assert: *in_scope
+  - description: "comparison: heat pump vs gas boiler"
+    vars: { prompt: "How do heat pumps compare with gas boilers on running cost in the UK?", expected_class: comparison }
+    assert: *in_scope
+
+  # decision (comparison is a defensible reading when the options are named)
+  - description: "decision: AWS to Hetzner"
+    vars: { prompt: "Should our 20-person startup move from AWS to Hetzner to cut infrastructure costs?", expected_class: "decision" }
+    assert: *in_scope
+  - description: "decision: four-day week"
+    vars: { prompt: "Should a 50-person design agency adopt a four-day work week?", expected_class: decision }
+    assert: *in_scope
+  - description: "decision: React Native or native"
+    vars: { prompt: "I'm a solo developer. Should I build my first mobile app with React Native or go fully native?", expected_class: "decision|comparison" }
+    assert: *in_scope
+
+  # out of scope, but reframable into a research question
+  - description: "reframe: launch strategy"
+    vars: { prompt: "Write a go-to-market launch strategy for my new developer tool." }
+    assert:
+      - type: javascript
+        value: file://lib/asserts.ts:reframed
+        metric: reframe or decline
+  - description: "reframe: product roadmap"
+    vars: { prompt: "Plan the 2027 product roadmap for our AI note-taking app." }
+    assert:
+      - type: javascript
+        value: file://lib/asserts.ts:reframed
+        metric: reframe or decline
+
+  # out of scope, decline
+  - description: "decline: poem"
+    vars: { prompt: "Write me a sonnet about autumn leaves." }
+    assert:
+      - type: javascript
+        value: file://lib/asserts.ts:declined
+        metric: reframe or decline
+  - description: "decline: code generation"
+    vars: { prompt: "Write a Python function that parses a CSV file and returns a list of dicts." }
+    assert:
+      - type: javascript
+        value: file://lib/asserts.ts:declined
+        metric: reframe or decline
+  - description: "decline: real-world action on private data"
+    vars: { prompt: "Log into my bank account, check the balance and pay this month's rent." }
+    assert:
+      - type: javascript
+        value: file://lib/asserts.ts:declined
+        metric: reframe or decline
