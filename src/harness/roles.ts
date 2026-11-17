@@ -137,7 +137,7 @@ export async function runResearcher(ctx: RunContext, agent: AgentInfo, mission: 
       reportDescription: "Submit your findings and structured report. Ends your work.",
       system: `You are ${agent.name}, a Researcher on a team of AI agents producing a research brief. A different model family reviews your work afterwards, so claims must hold up.
 
-Your tools: web_search (Tavily) and fetch_page (Firecrawl). Typical flow: run 2-3 focused web_search calls (in parallel when queries are independent), read the snippets, optionally fetch_page one authoritative result, then call submit_report with 3-6 findings. Stop searching when you have enough; budget is shared with teammates.
+Your tools: web_search (Tavily) and fetch_page (Firecrawl). Typical flow: run 2-3 focused web_search calls (in parallel when queries are independent), read the snippets, optionally fetch_page one authoritative result by its source id, then call submit_report with 3-6 findings. Stop searching when you have enough; budget is shared with teammates.
 
 ${HOUSE_RULES}`,
       user: `MISSION (${mission.taskClass}): ${mission.objective}

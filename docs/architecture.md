@@ -114,7 +114,7 @@ Critics run on a different model family from the agents they review, so they are
 `McpToolAdapter` in `mcp.ts` connects to the remote Tavily and Firecrawl MCP servers over HTTP with `@ai-sdk/mcp`. It exposes only an allow-listed tool from each server, under a narrower schema:
 
 - `web_search` wraps `tavily_search`. Each result becomes a citable source with an ID like `s3`.
-- `fetch_page` wraps `firecrawl_scrape`. It only accepts URLs that already appeared in this run's search results, which prevents arbitrary fetches and server-side request forgery. Page text is capped at `FETCH_CHAR_LIMIT`.
+- `fetch_page` wraps `firecrawl_scrape`. It takes the ID of one of this run's search results (like `s3`), not a URL, and the harness looks up the URL. An agent therefore can't fetch an arbitrary page, or one it recalls from memory, and server-side request forgery is ruled out. Page text is capped at `FETCH_CHAR_LIMIT`.
 
 `ToolRegistry` in `tools.ts` handles every call the same way, in this order: permission check, input validation, the tool's own pre-check, budget reservation, execution with a timeout, and one retry. It emits `tool.requested`, `tool.completed`, and `tool.failed`, and the inspector shows the MCP server, tool name, input schema, parameters, result, duration, and attempts. If the Firecrawl connection fails, the run continues with search only. If Tavily fails, the run fails. A stale MCP session, for example after a long approval pause, reconnects once.
 
@@ -246,7 +246,7 @@ The landing page has the prompt box with example chips and the public-run notice
 | Per-visitor cost | Salted IP hash with 1 active run, 3 per hour, and 10 per day (`LIMITS` in `src/server/guard.ts`) |
 | Global cost | Daily spend cap summed from run totals (running runs sync their totals as they go), plus the global queue concurrency limit on `run-mission` |
 | Per-run cost | `DEFAULT_LIMITS`, the soft and hard budget limits, and the bounded extension |
-| Tool abuse | Allow-listed MCP tools only, per-role tool permissions, and fetches restricted to URLs from the run's own searches |
+| Tool abuse | Allow-listed MCP tools only, per-role tool permissions, and fetches addressed by the ID of one of the run's own search results |
 | Prompt injection | Visitor prompts and web content are framed as data in every prompt |
 | Discoverability | Unguessable run IDs, `noindex`, and no public run list |
 | Hung runs | The task's `onFailure` hook marks crashed runs failed. While someone is watching, the SSE route also fails runs that sit queued too long, go silent, or exceed a maximum age (`src/server/runs.ts`) |
